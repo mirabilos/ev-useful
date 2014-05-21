@@ -1,0 +1,117 @@
+; $Id: wincktsk.inf 2678 2012-01-17 12:08:24Z tglase $
+; -
+; Copyright (c) 2011, 2012
+;	Thorsten Glaser <t.glaser@tarent.de>
+;
+; Provided that these terms and disclaimer and all copyright notices
+; are retained or reproduced in an accompanying document, permission
+; is granted to deal in this work without restriction, including un-
+; limited rights to use, publicly perform, distribute, sell, modify,
+; merge, give away, or sublicence.
+;
+; This work is provided "AS IS" and WITHOUT WARRANTY of any kind, to
+; the utmost extent permitted by applicable law, neither express nor
+; implied; without malicious intent or gross negligence. In no event
+; may a licensor, author or contributor be held liable for indirect,
+; direct, other damage, loss, or other issues arising in any way out
+; of dealing in the work, even if advised of the possibility of such
+; damage or existence of a defect, except proven that it results out
+; of said person's immediate fault when using the work as intended.
+; -
+; Installer for "tarent-E.T. for Windows NT"
+
+[Version]
+Signature=$CHICAGO$
+
+[DestinationDirs]
+STaddWindir=10
+SToldSystem=11
+ETaddSystem=11
+EToldSystem=11
+STaddINF=17
+EToldINF=17
+
+[DefaultInstall]
+CopyFiles=STaddWindir,ETaddSystem,STaddINF
+DelFiles=SToldSystem,EToldSystem,EToldINF
+AddReg=ETaddReg,NTPaddReg,MISCaddReg
+
+[STRemove]
+DelFiles=STaddWindir,STaddINF
+DelReg=STdelReg
+
+[ETRemove]
+AddReg=ETaddRegPostuninst
+DelFiles=ETaddSystem
+DelReg=ETdelReg
+
+[STaddWindir]
+schtaskp.exe
+
+[SToldSystem]
+schtaskp.exe
+
+[ETaddSystem]
+wincktfn.vbs
+wincktsk.bat
+
+[EToldSystem]
+; drop files from an older version
+wincktsk.vbs
+
+[STaddINF]
+wincktsk.inf
+
+[EToldINF]
+; drop files from an older version
+wckt2003.inf
+wxpcktsk.inf
+
+[ETaddReg]
+; postinstall
+HKLM,Software\Microsoft\Windows\CurrentVersion\RunOnce,"tarentETcron",,"%10%\schtaskp.exe /create /tn tarent-ET /tr wincktsk.bat /sc MINUTE /mo 10 /st 00:00:00 /et 23:59 /ru System /f"
+; uninstallation information
+HKLM,SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\schtaskp2k,"QuietDisplayName",,"schtaskp (needed by tarent-E.T.) Task Scheduler for win2k+"
+HKLM,SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\schtaskp2k,"QuietUninstallString",,"rundll32 setupapi.dll,InstallHinfSection STRemove 132 wincktsk.inf"
+HKLM,SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\tarentET,"DisplayName",,"tarent-E.T."
+HKLM,SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\tarentET,"UninstallString",,"rundll32 setupapi.dll,InstallHinfSection ETRemove 132 wincktsk.inf"
+
+[NTPaddReg]
+; configuration
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\Config,"UpdateInterval",0x10001,12000
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\Parameters,"AvoidTimeSyncOnWan",0x10001,0
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\Parameters,"NtpServer",,"ntp.tarent.de,0x1 entp.tarent.de,0x1 2.europe.pool.ntp.org,0x2"
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\Parameters,"Period",0x10001,144
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\Parameters,"Type",,"NTP"
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient,"CrossSiteSyncFlags",0x10001,2
+HKLM,SYSTEM\CurrentControlSet\Services\W32Time\TimeProviders\NtpClient,"SpecialPollInterval",0x10001,360
+; postinstall
+HKLM,Software\Microsoft\Windows\CurrentVersion\RunOnce,"tarentETntp",,"%11%\w32tm.exe /config /update"
+
+[MISCaddReg]
+HKLM,Software\Microsoft\Windows NT\CurrentVersion\Winlogon,"DefaultDomainName",,"TARENT"
+
+[ETaddRegPostuninst]
+; postuninstall
+HKLM,Software\Microsoft\Windows\CurrentVersion\RunOnce,"tarentETcron",,"%10%\schtaskp.exe /delete /tn tarent-ET /f"
+
+[STdelReg]
+; drop the entire key
+HKLM,SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\schtaskp2k
+
+[ETdelReg]
+; drop the entire key
+HKLM,SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\tarentET
+
+[SourceDisksNames]
+1=%DiskName%,tarentET,0
+
+[SourceDisksFiles]
+schtaskp.exe=1,,161280
+wincktfn.vbs=1,,6937
+wincktsk.bat=1,,90
+wxpcktsk.inf=1,,3998
+
+[Strings]
+Author="mirabilos"
+DiskName="tarent-E.T. Installation Floppy"
