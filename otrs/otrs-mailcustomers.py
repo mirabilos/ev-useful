@@ -33,11 +33,11 @@ class SOAPProxy(SOAPpy.SOAPProxy):
     def __call(self, name, args, kw, ns = None, sa = None, hd = None, ma = None):
         ns = ns or self.namespace
         sa = sa or self.soapaction
-    
+
         # Only prepend namespace if no soapaction was given.
-        if ns and not sa:           
+        if ns and not sa:
             sa = '%s#%s' % (ns, name)
-        
+
         return SOAPpy.SOAPProxy.__call(self, name, args, kw, ns, sa, hd, ma)
 
 # Configure SOAP access to OTRS
@@ -80,8 +80,8 @@ def otrs_dispatch(otrs_object, otrs_function, *args):
     return soap_proxy.Dispatch(soap_user, soap_password, otrs_object, otrs_function, *args)
 
 def naturalsort(l):
-    convert = lambda text: int(text) if text.isdigit() else text.lower() 
-    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
     return sorted(l, key = alphanum_key)
 
 def zipstruct(s):
@@ -146,7 +146,7 @@ for user in users:
 
     print("%s\t%s\t%s" % (users[user]["UserLogin"], users[user]["UserEmail"], users[user]["UserCustomerID"]))
 
-# Let suer decide if they want to bug all those users
+# Let user decide if they want to bug all those users
 print("")
 ret = raw_input("The users above will receive a mailing. Type OK if you so desire: ")
 if not ret == "OK":
