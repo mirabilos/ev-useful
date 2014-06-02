@@ -126,7 +126,7 @@ cat <<-'EOF'
 	   font-size:75%;
 	  }
 	 /*]]>*/--></style>
-	 <script type=\"text/javascript\"><!--//--><![CDATA[//><!--
+	 <script type="text/javascript"><!--//--><![CDATA[//><!--
 	  function klappen(nr, shnr, tsnr, wie) {
 	   var el = document.getElementById("pms" + nr);
 	   var bn = document.getElementById("txt" + nr);
@@ -281,7 +281,7 @@ cat <<-'EOF'
 	 '0');" href="#">Unexpand all</a>;
 	 click on a <tt>[-]</tt> or <tt>[+]</tt> to toggle extra text.</p>
 	<p>Note: on both FQDNs and PTR RRs, the DNS search suffix is cut off.</p>
-	<script type=\"text/javascript\"><!--//--><![CDATA[//><!--
+	<script type="text/javascript"><!--//--><![CDATA[//><!--
 	 function alle_klappen(dnsmac, etext) {
 EOF
 cat <<-EOF
