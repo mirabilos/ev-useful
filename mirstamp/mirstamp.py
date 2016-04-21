@@ -7662,7 +7662,7 @@ def mirstamp_wcswidth(text):
 
 ### plugin entry point
 
-def do_mirstamp(timg, tdrawable, text, colour, bgcol, trns, halign, valign):
+def do_mirstamp(timg, tdrawable, text, colour, bgcol, trns, halign, valign, hofs, vofs):
     if isinstance(u"", str):
         if isinstance(text, bytes):
             text = text.decode('UTF-8')
@@ -7708,7 +7708,7 @@ def do_mirstamp(timg, tdrawable, text, colour, bgcol, trns, halign, valign):
         vx = timg.height / 2 - h / 2
     elif valign == 2:
         vx = timg.height - h
-    tl.set_offsets(hx, vx)
+    tl.set_offsets(hx + hofs, vx - vofs)
     timg.add_layer(tl, -1)
     timg.flatten()
 
@@ -7729,6 +7729,8 @@ register("mirstamp",
     (PF_TOGGLE, "trns", "Transparent background?", True),
     (PF_RADIO, "halign", "Horizontal:", 0, (("left", 0), ("centre", 1), ("right", 2))),
     (PF_RADIO, "valign", "Vertical:", 2, (("top", 0), ("middle", 1), ("bottom", 2))),
+    (PF_INT, "hofs", "Offset horizontal:", 2),
+    (PF_INT, "vofs", "Offset vertical:", -2),
   ],
   [],
   do_mirstamp)
