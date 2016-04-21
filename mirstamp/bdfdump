@@ -1,0 +1,70 @@
+#!/bin/mksh
+#-
+# Copyright © 2016
+#	mirabilos <t.glaser@tarent.de>
+#
+# Provided that these terms and disclaimer and all copyright notices
+# are retained or reproduced in an accompanying document, permission
+# is granted to deal in this work without restriction, including un‐
+# limited rights to use, publicly perform, distribute, sell, modify,
+# merge, give away, or sublicence.
+#
+# This work is provided “AS IS” and WITHOUT WARRANTY of any kind, to
+# the utmost extent permitted by applicable law, neither express nor
+# implied; without malicious intent or gross negligence. In no event
+# may a licensor, author or contributor be held liable for indirect,
+# direct, other damage, loss, or other issues arising in any way out
+# of dealing in the work, even if advised of the possibility of such
+# damage or existence of a defect, except proven that it results out
+# of said person’s immediate fault when using the work as intended.
+#-
+# Dump a padded .bdfc font in array form; Pythonic, for now.
+
+die() {
+	print -ru2 -- "$0: E: $*"
+	exit 1
+}
+
+[[ -t 0 ]] && die 'stdin is a tty(4) device'
+
+read
+[[ $REPLY = '=bdfc 1' ]] || die not a bdfc file
+
+while IFS= read -r; do
+	[[ $REPLY = 'hFONTBOUNDINGBOX '+([0-9])' '+([0-9])' '* ]] || continue
+	set -A bbx $REPLY
+	break
+done
+
+if (( bbx[1] < 1 )); then
+	die width ${bbx[1]} too small, needs to be in range 1‥32
+elif (( bbx[1] <= 8 )); then
+	patx='+([0-9A-F][0-9A-F]:)'
+elif (( bbx[1] <= 16 )); then
+	patx='+([0-9A-F][0-9A-F][0-9A-F][0-9A-F]:)'
+elif (( bbx[1] <= 24 )); then
+	patx='+([0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]:)'
+elif (( bbx[1] <= 32 )); then
+	patx='+([0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]:)'
+else
+	die width ${bbx[1]} too large, needs to be in range 1‥32
+fi
+
+print -r -- "fontwidth = $((bbx[1]))"
+print -r -- "fontheight = $((bbx[2]))"
+print -r -- "fontbitmaps = {"
+
+grep '^c ' | while read c code width hex rest; do
+	[[ $code = [0-9A-F][0-9A-F][0-9A-F][0-9A-F] ]] || \
+	    die "invalid encoding $code"
+	[[ $width = ${bbx[1]} ]] || die \#$code width $width ≠ font’s ${bbx[1]}
+	if eval [[ '$hex:' != "$patx" ]]; then
+		die \#$code invalid hex encoding
+	fi
+	x=${hex//[!:]}
+	(( (${#x} + 1) == bbx[2] )) || \
+	    die \#$code height $((${#x} + 1)) ≠ font’s ${bbx[2]}
+	print -r -- "    0x$code: (0x${hex//:/, 0x}),"
+done
+
+print -r -- "  }"
