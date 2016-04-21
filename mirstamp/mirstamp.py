@@ -7619,6 +7619,14 @@ fontbitmaps = {
 # END generated code }}}
 
 def do_mirstamp(timg, tdrawable, text, colour):
+    if isinstance(u"", str):
+        if isinstance(text, bytes):
+            text = text.decode('UTF-8')
+        text = str(text)
+    else:
+        if not isinstance(text, unicode):
+            text = str(text).decode('UTF-8')
+        text = unicode(text)
     # ╱╲╱╲╱╲ 96x16px R,G,B – for now…
     w = 96
     h = 16
