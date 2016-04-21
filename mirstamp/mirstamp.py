@@ -7618,6 +7618,31 @@ fontdata = (9, 18, {
 # END generated code }}}
 fontreplacementchar = 0 # or 0xFFFD
 
+### font rendering
+
+def mirstamp_drawtext(text, draw):
+    hpos = 0 # position of last drawn glyph, for combining
+    hcur = 0 # position of cursor / next glyph to draw / width
+    if fontdata[0] <= 8:
+        mask = 0x80
+    elif fontdata[0] <= 16:
+        mask = 0x8000
+    elif fontdata[0] <= 24:
+        mask = 0x800000
+    elif fontdata[0] <= 32:
+        mask = 0x80000000
+    for char in text:
+        data = mirstamp_char(char)
+        if data[0] != 0:
+            hpos = hcur
+            hcur += fontdata[0]
+        for y in range(fontdata[1]):
+            row = data[1][y]
+            for col in range(fontdata[0]):
+                if row & mask:
+                    draw(hpos + col, y)
+                row <<= 1
+
 
 ### helper functions
 
@@ -7646,9 +7671,9 @@ def do_mirstamp(timg, tdrawable, text, colour, bgcol, trns, halign, valign):
         if not isinstance(text, unicode):
             text = str(text).decode('UTF-8')
         text = unicode(text)
-    # ╱╲╱╲╱╲ 96x16px R,G,B – for now…
-    w = 96
-    h = 16
+
+    w = fontdata[0] * mirstamp_wcswidth(text)
+    h = fontdata[1]
     tl = gimp.Layer(timg, "tmp", w, h, RGBA_IMAGE, 100, NORMAL_MODE)
     if trns:
         tl.fill(TRANSPARENT_FILL)
@@ -7661,45 +7686,15 @@ def do_mirstamp(timg, tdrawable, text, colour, bgcol, trns, halign, valign):
     if len(pr[0, 0]) != 4:
         raise Exception("number of channels (%d) unexpectedly not 4" % len(pr[0, 0]))
     fb = array("B", pr[0:w, 0:h])
-    for (ofs, col) in ((0,(255,0,0)), (32,(0,255,0)), (64,(0,0,255))):
-        bcol = array("B", col)
+    bcol = array("B", colour)
+    if len(bcol.tostring()) == 3:
         bcol.append(0xFF)
-        def draw(x, y):
-            ptr = (y * w + x + ofs) * 4
-            fb[ptr:ptr+4] = bcol
-        draw(0, 15 - 0)
-        draw(0, 15 - 1)
-        draw(1, 15 - 2)
-        draw(2, 15 - 2)
-        draw(3, 15 - 3)
-        draw(4, 15 - 4)
-        draw(5, 15 - 5)
-        draw(6, 15 - 6)
-        draw(7, 15 - 7)
-        draw(8, 15 - 8)
-        draw(9, 15 - 9)
-        draw(10, 15 - 10)
-        draw(11, 15 - 11)
-        draw(12, 15 - 12)
-        draw(13, 15 - 13)
-        draw(14, 15 - 14)
-        draw(15, 15 - 15)
-        draw(16, 15 - 15)
-        draw(17, 15 - 14)
-        draw(18, 15 - 13)
-        draw(19, 15 - 12)
-        draw(20, 15 - 11)
-        draw(21, 15 - 10)
-        draw(22, 15 - 9)
-        draw(23, 15 - 8)
-        draw(24, 15 - 7)
-        draw(25, 15 - 6)
-        draw(26, 15 - 5)
-        draw(27, 15 - 4)
-        draw(28, 15 - 3)
-        draw(29, 15 - 2)
-        draw(30, 15 - 1)
-        draw(31, 15 - 0)
+    elif len(bcol.tostring()) != 4:
+        raise Exception("text colour number of channels (%d) unexpectedly not 4" % len(bcol.tostring()))
+    def draw(x, y):
+        ptr = (y * w + x) * 4
+        fb[ptr:ptr+4] = bcol
+    mirstamp_drawtext(text, draw)
     pr[0:w, 0:h] = fb.tostring()
     if halign == 0:
         hx = 0
