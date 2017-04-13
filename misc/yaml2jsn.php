@@ -1,6 +1,6 @@
 <?php
 /*-
- * Copyright © 2017
+ * Copyright © 2012, 2017
  *	mirabilos <t.glaser@tarent.de>
  *
  * Provided that these terms and disclaimer and all copyright notices
@@ -37,6 +37,53 @@ function fwrite_all($fh, $str) {
 	}
 }
 
+function array_sort_all_by_json($x) {
+	if (!is_array($x))
+		return $x;
+
+	$k = array_keys($x);
+	$isnum = true;
+	foreach ($k as $v) {
+		if (is_int($v)) {
+			$y = (int)$v;
+			$z = (string)$y;
+			if ($v != $z) {
+				$isnum = false;
+				break;
+			}
+		} else {
+			$isnum = false;
+			break;
+		}
+	}
+
+	if ($isnum) {
+		/* all array keys are integers */
+		$s = $k;
+		sort($s, SORT_NUMERIC);
+		/* test keys for order and delta */
+		$y = 0;
+		foreach ($s as $v) {
+			if ($v != $y) {
+				$isnum = false;
+				break;
+			}
+			$y++;
+		}
+	}
+
+	if ($isnum)
+		sort($k, SORT_NUMERIC);
+	else
+		sort($k, SORT_STRING);
+
+	$r = array();
+	foreach ($k as $v) {
+		$r[$v] = array_sort_all_by_json($x[$v]);
+	}
+	return $r;
+}
+
 $indoc = file_get_contents("php://stdin");
 if (!$indoc)
 	croak("no input");
@@ -46,6 +93,7 @@ if (($in = yaml_parse($indoc, 0, $numdocs)) === false || $numdocs === -666)
 	croak("could not parse input document as YAML");
 if ($numdocs !== 1)
 	croak("found $numdocs documents but can only handle a single one");
+$in = array_sort_all_by_json($in);
 
 $jsn = minijson_encode($in) . "\n";
 fwrite_all(STDOUT, $jsn);
