@@ -38,16 +38,19 @@ char s_mplayer[] = "mplayer";
 
 unsigned char debug;
 
-static void c_cat(void);
+static void c_cat(int, int);
 
 int
 main(int argc, char *argv[])
 {
-	int fd;
-	char *cp, **nargv;
+	int fd, pipefd[2];
+	char *cp, **nargv, dummy;
 	unsigned int nsec = 3;
 
 	debug = ((cp = getenv("BUFMPLAYER_DEBUG")) && *cp != 0 && *cp != '0');
+
+	if (pipe(pipefd))
+		err(255, "E: pipe");
 
 	if ((cp = getenv("BUFMPLAYER_SLEEP"))) {
 		long long res;
@@ -72,17 +75,16 @@ main(int argc, char *argv[])
 	/* do we need to double-fork? not, for now */
 	switch (fork()) {
 	case 0:
-		if (dup2(fd, 1) == -1)
-			err(255, "E: dup2 %d to #1", fd);
-		if (closefrom(3))
-			warn("W: closefrom");
-		c_cat();
+		close(pipefd[0]);
+		c_cat(fd, pipefd[1]);
 		_exit(0);
 	default:
 		break;
 	case -1:
 		err(255, "E: fork");
 	}
+	close(pipefd[1]);
+	close(0);
 
 	if (dup2(2, 0) == -1)
 		err(255, "E: dup2 stderr to stdin");
@@ -99,6 +101,12 @@ main(int argc, char *argv[])
 		err(255, "E: asprintf");
 	nargv[(size_t)argc + 1] = NULL;
 
+	/* wait for signal from child */
+	errno = 0;
+	if (read(pipefd[0], &dummy, 1) != 1)
+		warn("\nW: read from child");
+	close(pipefd[0]);
+
 	do {
 		fprintf(stderr, " .");
 		fflush(stderr);
@@ -112,7 +120,7 @@ main(int argc, char *argv[])
 }
 
 static void
-c_cat(void)
+c_cat(int dfd, int sigfd)
 {
 	ssize_t n, w;
 	unsigned long long total = 0;
@@ -130,8 +138,20 @@ c_cat(void)
 			break;
 		if (debug)
 			fprintf(stderr, "I: read %zd bytes\n", n);
+		if (sigfd != -1) {
+			/* signal parent after first read */
+ resig:
+			if ((w = write(sigfd, buf, 1)) == -1) {
+				if (errno == EINTR)
+					goto resig;
+				err(255, "E: write (signal)");
+			} else if (w < 1)
+				goto resig;
+			close(sigfd);
+			sigfd = -1;
+		}
 		while (n) {
-			if ((w = write(1, cp, n)) == -1) {
+			if ((w = write(dfd, cp, n)) == -1) {
 				if (errno == EINTR)
 					continue;
 				err(255, "E: write (child)");
