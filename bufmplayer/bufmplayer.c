@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,7 +44,7 @@ static void c_cat(int, int);
 int
 main(int argc, char *argv[])
 {
-	int fd, pipefd[2];
+	int buffd[2], pipefd[2];
 	char *cp, **nargv, dummy;
 	unsigned int nsec = 3;
 
@@ -67,22 +68,32 @@ main(int argc, char *argv[])
 	} else if (debug)
 		fprintf(stderr, "I: sleeping for %u seconds (default)\n", nsec);
 
-	if ((fd = mkstemp(tmpf)) == -1)
+	if ((buffd[1] = mkstemp(tmpf)) == -1)
 		err(255, "E: mkstemp %s", tmpf);
+	if ((buffd[0] = open(tmpf, O_RDONLY)) == -1) {
+		int e = errno;
+
+		if (unlink(tmpf))
+			warn("W: unlink %s", tmpf);
+		errno = e;
+		err(255, "E: open %s", tmpf);
+	}
 	if (unlink(tmpf))
 		warn("W: unlink %s", tmpf);
 
 	/* do we need to double-fork? not, for now */
 	switch (fork()) {
 	case 0:
+		close(buffd[0]);
 		close(pipefd[0]);
-		c_cat(fd, pipefd[1]);
+		c_cat(buffd[1], pipefd[1]);
 		_exit(0);
 	default:
 		break;
 	case -1:
 		err(255, "E: fork");
 	}
+	close(buffd[1]);
 	close(pipefd[1]);
 	close(0);
 
@@ -97,7 +108,7 @@ main(int argc, char *argv[])
 		    sizeof(char *));
 	memcpy(nargv, argv, (size_t)argc * sizeof(char *));
 	nargv[0] = s_mplayer;
-	if (asprintf(&(nargv[(size_t)argc]), "/dev/fd/%u", fd) == -1)
+	if (asprintf(&(nargv[(size_t)argc]), "/dev/fd/%u", buffd[0]) == -1)
 		err(255, "E: asprintf");
 	nargv[(size_t)argc + 1] = NULL;
 
