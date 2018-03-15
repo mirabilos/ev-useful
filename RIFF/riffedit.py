@@ -18,13 +18,18 @@
 # damage or existence of a defect, except proven that it results out
 # of said person’s immediate fault when using the work as intended.
 #-
-# python3 fix-ICOP.py -d src.sf2  # dump info only
-# python3 fix-ICOP.py src.sf2 dst.sf2 'name' 'new (c)' 'engineer' 'comment'
+# python3 riffedit.py -d src.sf2  # dump info only
+# python3 riffedit.py src.sf2 dst.sf2 { [-az] 'chnk' 'content' } ...
+#  where -a means to align with NULs and -z to NUL-terminate
+#  chnk means the RIFF chunk, LIST<chnk>/chnk is also supported
+# Chunks currently need to exist in the input, insertion and deletion
+# is missing for some later version to add.
 # The comment field is limited to 65535 ASCII bytes, the others to 255.
 #
 # You may also use this under the same terms as the Fluid (R3) soundfont.
 
 from io import SEEK_SET, SEEK_CUR
+import os
 import struct
 import sys
 
@@ -238,9 +243,28 @@ else:
     with open(sys.argv[1], 'rb') as f, open(sys.argv[2], 'wb', buffering=65536) as dst:
         riff = RIFFFile(f)
         dumpriff(riff)
-        riff[0][b'LIST<INFO>'][b'INAM'].set_content(sys.argv[3] + '\0', True)
-        riff[0][b'LIST<INFO>'][b'ICOP'].set_content(sys.argv[4] + '\0', True)
-        riff[0][b'LIST<INFO>'][b'IENG'].set_content(sys.argv[5] + '\0', True)
-        riff[0][b'LIST<INFO>'][b'ICMT'].set_content(sys.argv[6] + '\0', True)
+        i = 3
+        _flags = { '-a': 1, '-z': 2, '-az': 3 }
+        while i < len(sys.argv):
+            flags = 0
+            if sys.argv[i] in _flags:
+                flags = _flags[sys.argv[i]]
+                i += 1
+                if i >= len(sys.argv):
+                    break
+            chunks = sys.argv[i].split('/')
+            if chunks[0].isnumeric():
+                chnk = riff
+            else:
+                chnk = riff[0]
+            for cur in chunks:
+                chnk = chnk[os.fsencode(cur)]
+            val = os.fsencode(sys.argv[i + 1])
+            if flags & 2:
+                val += b'\0'
+            chnk.set_content(val, bool(flags & 1))
+            i += 2
+        print("=> after processing:")
+        dumpriff(riff)
         riff.write(dst)
 print('OUT')
