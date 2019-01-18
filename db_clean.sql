@@ -17,9 +17,6 @@
 -- of said person’s immediate fault when using the work as intended.
 -- -
 -- Drop everything from the PostgreSQL database.
--- Run this while the tomcat service is stopped!
---
--- Release: ${project.version}
 
 DO $$
 DECLARE
