@@ -24,6 +24,8 @@ Not dropped are (some deliberate; some only because I had no example in our DB):
 
 I’ve also got a version which deletes “everything except two tables and what belongs to them” in case someone is interested; the diff is small. Contact me if necessary.
 
+This is **really** useful for the cases when the dump you want to restore is of a different database schema version (e.g. with Debian `dbconfig-common`, Flyway or Liquibase/DB-Manul) than the database you want to restore it into.
+
 ## SQL
 
     -- Copyright © 2019
