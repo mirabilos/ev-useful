@@ -1,26 +1,3 @@
--- Copyright © 2019
---	mirabilos <t.glaser@tarent.de>
---
--- Provided that these terms and disclaimer and all copyright notices
--- are retained or reproduced in an accompanying document, permission
--- is granted to deal in this work without restriction, including un‐
--- limited rights to use, publicly perform, distribute, sell, modify,
--- merge, give away, or sublicence.
---
--- This work is provided “AS IS” and WITHOUT WARRANTY of any kind, to
--- the utmost extent permitted by applicable law, neither express nor
--- implied; without malicious intent or gross negligence. In no event
--- may a licensor, author or contributor be held liable for indirect,
--- direct, other damage, loss, or other issues arising in any way out
--- of dealing in the work, even if advised of the possibility of such
--- damage or existence of a defect, except proven that it results out
--- of said person’s immediate fault when using the work as intended.
--- -
--- Drop everything from the PostgreSQL database.
--- Run this while the tomcat service is stopped!
---
--- Release: ${project.version}
-
 DO $$
 DECLARE
 	r RECORD;
@@ -50,6 +27,9 @@ BEGIN
 		FROM pg_constraint pcon, pg_class pc, pg_namespace pns
 		WHERE pns.oid=pc.relnamespace AND pc.oid=pcon.conrelid
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+		    AND (pns.nspname, pc.relname) NOT IN (
+			('public', 'adapter_configs'),
+			('public', 'config'))
 		    AND pcon.contype<>'f'
 	    ) LOOP
 		EXECUTE format('ALTER TABLE ONLY %I.%I DROP CONSTRAINT %I;',
@@ -57,9 +37,16 @@ BEGIN
 	END LOOP;
 	-- indicēs
 	FOR r IN (SELECT pns.nspname, pc.relname
-		FROM pg_class pc, pg_namespace pns
-		WHERE pns.oid=pc.relnamespace
+		FROM pg_class pc, pg_namespace pns, pg_index pi
+		WHERE pns.oid=pc.relnamespace AND pi.indexrelid=pc.oid
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+		    AND NOT EXISTS (SELECT tc.oid
+			FROM pg_class tc, pg_namespace tns
+			WHERE tns.oid=tc.relnamespace
+			    AND tns.nspname='public'
+			    AND tc.relname IN ('adapter_configs', 'config')
+			    AND tc.oid=pi.indrelid
+			)
 		    AND pc.relkind='i'
 	    ) LOOP
 		EXECUTE format('DROP INDEX %I.%I;',
@@ -80,6 +67,9 @@ BEGIN
 		FROM pg_class pc, pg_namespace pns
 		WHERE pns.oid=pc.relnamespace
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+		    AND (pns.nspname, pc.relname) NOT IN (
+			('public', 'adapter_configs'),
+			('public', 'config'))
 		    AND pc.relkind='r'
 	    ) LOOP
 		EXECUTE format('DROP TABLE %I.%I;',
@@ -90,6 +80,8 @@ BEGIN
 		FROM pg_class pc, pg_namespace pns
 		WHERE pns.oid=pc.relnamespace
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+		    AND (pns.nspname, pc.relname) NOT IN (
+			('public', 'config_pk_seq'))
 		    AND pc.relkind='S'
 	    ) LOOP
 		EXECUTE format('DROP SEQUENCE %I.%I;',
@@ -115,5 +107,5 @@ BEGIN
 		EXECUTE format('DROP SCHEMA %I;', r.nspname);
 	END LOOP;
 	-- voilà
-	RAISE NOTICE 'Database cleared!';
+	RAISE NOTICE 'Database cleared except two!';
 END; $$;
