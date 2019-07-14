@@ -92,6 +92,14 @@ BEGIN
 		EXECUTE format('DROP SEQUENCE %I.%I;',
 		    r.nspname, r.relname);
 	END LOOP;
+	-- extensions (only if necessary; keep them normally)
+	FOR r IN (SELECT pns.nspname, pe.extname
+		FROM pg_extension pe, pg_namespace pns
+		WHERE pns.oid=pe.extnamespace
+		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+	    ) LOOP
+		EXECUTE format('DROP EXTENSION %I;', r.extname);
+	END LOOP;
 	-- functions / procedures
 	FOR r IN (SELECT pns.nspname, pp.proname, pp.oid
 		FROM pg_proc pp, pg_namespace pns

@@ -19,6 +19,7 @@
 -- Drop everything from the PostgreSQL database, except:
 -- * two tables (public.adapter_configs, public.config)
 -- * a sequence (public.config_pk_seq)
+-- * extensions
 
 DO $$
 DECLARE

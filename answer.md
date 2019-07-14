@@ -8,11 +8,11 @@ For the cases where you can’t just `DROP SCHEMA public CASCADE;`, `DROP OWNED 
  - sequences
  - functions / procedures ([`pg_proc.proisagg`](https://www.postgresql.org/docs/current/catalog-pg-proc.html) probably [should be honoured](https://stackoverflow.com/a/12127714/2171120) though)
  - all nōn-default (i.e. not `public` or DB-internal) schemata “we” own: the script is useful when run as “not a database superuser”; a superuser can drop _all_ schemata (the really important ones are still explicitly excluded, though)
+ - extensions (user-contributed but I normally deliberately leave them in)
 
 Not dropped are (some deliberate; some only because I had no example in our DB):
 
  - the `public` schema (e.g. for extension-provided stuff in them)
- - extensions
  - aggregate functions
  - collations and other locale stuff
  - event triggers
@@ -122,6 +122,14 @@ I’ve also got a version which deletes “everything except two tables and what
                     EXECUTE format('DROP SEQUENCE %I.%I;',
                         r.nspname, r.relname);
             END LOOP;
+            -- extensions (see below), only if necessary
+            FOR r IN (SELECT pns.nspname, pe.extname
+                    FROM pg_extension pe, pg_namespace pns
+                    WHERE pns.oid=pe.extnamespace
+                        AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+                ) LOOP
+                    EXECUTE format('DROP EXTENSION %I;', r.extname);
+            END LOOP;
             -- functions / procedures
             FOR r IN (SELECT pns.nspname, pp.proname, pp.oid
                     FROM pg_proc pp, pg_namespace pns
@@ -145,4 +153,4 @@ I’ve also got a version which deletes “everything except two tables and what
             RAISE NOTICE 'Database cleared!';
     END; $$;
 
-Tested on PostgreSQL 9.6 (`jessie-backports`). Bugfixes and further improvements welcome!
+Tested, except later additions (`extensions` contributed by [Clément Prévost](https://dba.stackexchange.com/users/65636)), on PostgreSQL 9.6 (`jessie-backports`). Bugfixes and further improvements welcome!
