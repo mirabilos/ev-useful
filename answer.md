@@ -1,3 +1,5 @@
+Note: my answer is about really deleting the tables and other database objects; for [deleting all data _in_ the tables, i.e. truncating all tables](https://stackoverflow.com/a/54832238/2171120), Endre Both has provided a similarily well-executed (direct execution) statement a month later.
+
 For the cases where you can’t just `DROP SCHEMA public CASCADE;`, `DROP OWNED BY current_user;` or something, here’s a stand-alone SQL script I wrote, which is transaction-safe (i.e. you can put it between `BEGIN;` and either `ROLLBACK;` to just test it out or `COMMIT;` to actually do the deed) and cleans up “all” database objects… well, all those used in the database our application uses or I could sensibly add, which is:
 
  - triggers on tables
