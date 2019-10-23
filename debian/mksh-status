@@ -1,0 +1,78 @@
+#!/bin/mksh
+
+unset LANGUAGE
+export LC_ALL=C.UTF-8
+
+function die {
+	print -ru2 -- "E: $@"
+	exit 1
+}
+
+T=$(mktemp -d /tmp/mksh-status.XXXXXXXXXX) || die cannot create temporary directory
+
+rv=0
+(
+set -e
+set -o pipefail
+cd "$T"
+
+lynx -source https://buildd.debian.org/status/package.php?p=mksh | \
+    tee s.htm | \
+    HTML_TIDY=/dev/null tidy -asxhtml -utf8 --newline LF --output-bom no \
+    --drop-empty-elements no --drop-empty-paras no --quote-nbsp no --wrap 0 | \
+    xmlstarlet fo -e UTF-8 - | \
+    sed --posix 's!<html xmlns="http://www.w3.org/1999/xhtml"!<html!' \
+    >s.xml
+
+<s.xml >s.lst xmlstarlet sel -T -B -E UTF-8 -t \
+    --var linebreak -n --break \
+    -m '//table[@class="data"]' \
+     -m './tr' \
+      -i 'position() > 2' \
+	-o 'A: <' \
+	-v 'translate(./td[1], $linebreak, " ")' \
+	-o '> <' \
+	-v 'translate(./td[3]/a/@href, $linebreak, " ")' \
+	-o '> :L' -n \
+      -b \
+     -b \
+    -b
+
+set -A archs
+narchs=0
+set -A logs
+
+while IFS=' ' read -r a arch log l; do
+	[[ $a = A: ]] || die "arch $((narchs+1)) beginning broken: ${a@Q} ($arch)"
+	[[ $l = :L ]] || die "arch $((narchs+1)) ending broken: ${l@Q} ($arch)"
+	[[ $arch = '<'+([0-9a-z-])'>' ]] || die "arch $((narchs+1)) arch broken: ${arch@Q}"
+	arch=${arch#'<'}
+	arch=${arch%'>'}
+	if [[ $log = '<>' ]]; then
+		log=
+	elif [[ $log != '<fetch.php?'*'>' ]]; then
+		die "arch $((narchs+1)) log broken: ${log@Q} ($arch)"
+	else
+		log=https://buildd.debian.org/status/${log#'<'}
+		log=${log%'>'}
+	fi
+	logs[narchs]=$log
+	archs[narchs++]=$arch
+done <s.lst
+
+print -ru2 -- "I: found $narchs architectures, ${#logs[*]} with logs"
+print -ru2 -- N: "${archs[@]}"
+
+i=-1
+while (( ++i < narchs )); do
+	[[ -n ${logs[i]} ]] || continue
+	wget --quiet --show-progress -O arch."${archs[i]}" "${logs[i]}&raw=1"
+done
+
+pwd
+read
+
+) || rv=1
+cd /
+rm -rf "$T"
+exit $rv
