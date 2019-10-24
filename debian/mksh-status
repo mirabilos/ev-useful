@@ -56,8 +56,19 @@ while IFS=' ' read -r a arch log l; do
 		log=https://buildd.debian.org/status/${log#'<'}
 		log=${log%'>'}
 	fi
-	logs[narchs]=$log
+	case $arch in
+	(hurd-i386) arch=hurd ;;
+	(hurd*) die "another hurd* found: ${arch@Q}" ;;
+	(kfreebsd-i386) arch=k-i386 ;;
+	(kfreebsd-amd64) arch=k-amd64 ;;
+	(k-*|kfreebsd*) die "another k(freebsd)* found: ${arch@Q}" ;;
+	esac
+	[[ -n $log ]] && logs[narchs]=$log
 	archs[narchs++]=$arch
+	# debugging
+	:||if [[ $arch = alpha ]]; then
+		archs[narchs++]=avr32
+	fi
 done <s.lst
 
 print -ru2 -- "I: found $narchs architectures, ${#logs[*]} with logs"
@@ -69,6 +80,64 @@ while (( ++i < narchs )); do
 	wget --quiet --show-progress -O arch."${archs[i]}" "${logs[i]}&raw=1"
 done
 
+cat >columnus <<-'EOF'
+	arch)prog)system)klibc)musl)dietlibc)glibc
+EOF
+
+i=-1
+while (( ++i < narchs )); do
+	if [[ -n ${logs[i]} ]]; then (
+		llc=$(sed --posix -n \
+		    '/^D:loglibc:final(\([^)]*\)) \(.*\) finishing$/{s//\1)\2/p;q;}' \
+		    <arch."${archs[i]}")
+		vsn=${llc%%')'*}
+		eval "$(sed --posix \
+		    -e 's/_(\([0-9]*\)_\([^) ]\)[^) ]*)\([a-z]\)/\3\/\1\2/g' \
+		    -e 's/RTCHK/rtchk/g' -e 's/MTEST/mtest/g' \
+		    -e 's/testsuite-failed/fail/g' \
+		    -e 's/passed-but-notty/ntty/g' \
+		    -e 's/succeeded-tested/succ/g' \
+		    <<-EOF
+			${llc#*')'}
+		EOF
+		)"
+		cat >>columnus <<-EOF
+			${archs[i]})mksh)$system)$mksh_klibc)$mksh_musl)$mksh_dietlibc)$mksh_glibc
+			 )lksh) ↑ version($vsn)$lksh_klibc)$lksh_musl)$lksh_dietlibc)$lksh_glibc
+		EOF
+	); else
+		cat >>columnus <<-EOF
+			${archs[i]})-)⁉ missing)⁉ missing)⁉ missing)⁉ missing)⁉ absent
+		EOF
+	fi
+done
+
+column -ts')' <columnus >tabularis
+ed -s tabularis <<-\EOF
+	,g/✓[^ ]*/s//[0;1;30;40m&/g
+	,g/？[^ ]*/s//[0;33;40m&/g
+	,g/⁉[^ ]*/s//[0;1;33;40m&/g
+	,g/⁇[^ ]*/s//[0;35,40m&/g
+	,g/✘[^ ]*/s//[0;1;31;40m&/g
+	,g/✗[^ ]*/s//[0;31;40m&/g
+	,g/☒[^ ]*/s//[0;1;35;40m&/g
+	,g/✔[^ ]*/s//[0;1;32;40m&/g
+	,g/\( ↑[^(]*\)(\([^ ]*\) /s//[0;1;30;40m\1 [0;1m\2 /
+	1s/^/[0m/
+	1s/  */&| /g
+	1s/$/   /
+	2,$s/^[^ ]/[0;1;34;40m&/
+	2,$s/  */[0m&| /g
+	,g/ |/s//|/g
+	1t$
+	2,$g/^[^m]*m[^ ]/.-1s/.0/&;4/g
+	,g/$/s//[0m/
+	w
+	q
+EOF
+
+echo
+cat tabularis
 pwd
 read
 
