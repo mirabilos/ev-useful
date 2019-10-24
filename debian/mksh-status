@@ -138,7 +138,7 @@ EOF
 
 echo
 cat tabularis
-pwd
+print -nr -- "[0;1;30;40m⇐ $PWD ⇒ press Return to continue…[0m"
 read
 
 ) || rv=1
