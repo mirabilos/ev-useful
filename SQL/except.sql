@@ -162,5 +162,5 @@ BEGIN
 		EXECUTE format('DROP SCHEMA %I;', r.nspname);
 	END LOOP;
 	-- voilà
-	RAISE NOTICE 'Database cleared except two!';
+	RAISE NOTICE 'Database cleared except excepted items (see source).';
 END; $$;
