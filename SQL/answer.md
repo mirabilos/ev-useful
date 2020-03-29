@@ -8,7 +8,7 @@ For the cases where you can’t just `DROP SCHEMA public CASCADE;`, `DROP OWNED 
  - `VIEW`s (normal or materialised)
  - tables
  - sequences
- - functions / procedures ([`pg_proc.proisagg`](https://www.postgresql.org/docs/current/catalog-pg-proc.html) probably [should be honoured](https://stackoverflow.com/a/12127714/2171120) though)
+ - functions / procedures ([`pg_proc.proisagg`](https://www.postgresql.org/docs/current/catalog-pg-proc.html) probably [should be honoured](https://stackoverflow.com/a/12127714/2171120) though, respectively `prokind` as [BogeyMan](https://stackoverflow.com/users/585217) noted)
  - all nōn-default (i.e. not `public` or DB-internal) schemata “we” own: the script is useful when run as “not a database superuser”; a superuser can drop _all_ schemata (the really important ones are still explicitly excluded, though)
  - extensions (user-contributed but I normally deliberately leave them in)
 
