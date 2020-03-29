@@ -27,7 +27,7 @@ DECLARE
 BEGIN
 	-- triggers
 	FOR r IN (SELECT pns.nspname, pc.relname, pt.tgname
-		FROM pg_trigger pt, pg_class pc, pg_namespace pns
+		FROM pg_catalog.pg_trigger pt, pg_catalog.pg_class pc, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pc.relnamespace AND pc.oid=pt.tgrelid
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND pt.tgisinternal=false
@@ -37,7 +37,7 @@ BEGIN
 	END LOOP;
 	-- constraints #1: foreign key
 	FOR r IN (SELECT pns.nspname, pc.relname, pcon.conname
-		FROM pg_constraint pcon, pg_class pc, pg_namespace pns
+		FROM pg_catalog.pg_constraint pcon, pg_catalog.pg_class pc, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pc.relnamespace AND pc.oid=pcon.conrelid
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND pcon.contype='f'
@@ -47,7 +47,7 @@ BEGIN
 	END LOOP;
 	-- constraints #2: the rest
 	FOR r IN (SELECT pns.nspname, pc.relname, pcon.conname
-		FROM pg_constraint pcon, pg_class pc, pg_namespace pns
+		FROM pg_catalog.pg_constraint pcon, pg_catalog.pg_class pc, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pc.relnamespace AND pc.oid=pcon.conrelid
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND (pns.nspname, pc.relname) NOT IN (
@@ -60,11 +60,11 @@ BEGIN
 	END LOOP;
 	-- indicēs
 	FOR r IN (SELECT pns.nspname, pc.relname
-		FROM pg_class pc, pg_namespace pns, pg_index pi
+		FROM pg_catalog.pg_class pc, pg_catalog.pg_namespace pns, pg_catalog.pg_index pi
 		WHERE pns.oid=pc.relnamespace AND pi.indexrelid=pc.oid
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND NOT EXISTS (SELECT tc.oid
-			FROM pg_class tc, pg_namespace tns
+			FROM pg_catalog.pg_class tc, pg_catalog.pg_namespace tns
 			WHERE tns.oid=tc.relnamespace
 			    AND tns.nspname='public'
 			    AND tc.relname IN ('adapter_configs', 'config')
@@ -77,7 +77,7 @@ BEGIN
 	END LOOP;
 	-- normal and materialised views
 	FOR r IN (SELECT pns.nspname, pc.relname
-		FROM pg_class pc, pg_namespace pns
+		FROM pg_catalog.pg_class pc, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pc.relnamespace
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND pc.relkind IN ('v', 'm')
@@ -87,7 +87,7 @@ BEGIN
 	END LOOP;
 	-- tables
 	FOR r IN (SELECT pns.nspname, pc.relname
-		FROM pg_class pc, pg_namespace pns
+		FROM pg_catalog.pg_class pc, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pc.relnamespace
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND (pns.nspname, pc.relname) NOT IN (
@@ -100,7 +100,7 @@ BEGIN
 	END LOOP;
 	-- sequences
 	FOR r IN (SELECT pns.nspname, pc.relname
-		FROM pg_class pc, pg_namespace pns
+		FROM pg_catalog.pg_class pc, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pc.relnamespace
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 		    AND (pns.nspname, pc.relname) NOT IN (
@@ -112,7 +112,7 @@ BEGIN
 	END LOOP;
 	-- functions / procedures
 	FOR r IN (SELECT pns.nspname, pp.proname, pp.oid
-		FROM pg_proc pp, pg_namespace pns
+		FROM pg_catalog.pg_proc pp, pg_catalog.pg_namespace pns
 		WHERE pns.oid=pp.pronamespace
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 	    ) LOOP
@@ -122,7 +122,7 @@ BEGIN
 	END LOOP;
 	-- nōn-default schemata we own; assume to be run by a not-superuser
 	FOR r IN (SELECT pns.nspname
-		FROM pg_namespace pns, pg_roles pr
+		FROM pg_catalog.pg_namespace pns, pg_catalog.pg_roles pr
 		WHERE pr.oid=pns.nspowner
 		    AND pns.nspname NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'public')
 		    AND pr.rolname=current_user
