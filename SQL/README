@@ -1,0 +1,11 @@
+Script to clean a PostgreSQL database completely,
+without deleting the “public” schema or other
+administrative things.
+
+Copyright © 2019 mirabilos
+Published by ⮡ tarent under Ⓕ The MirOS Licence
+
+Shared online under:
+• https://dba.stackexchange.com/a/227502/65843
+• https://stackoverflow.com/a/54258882/2171120
+• https://stackoverflow.com/a/54258891/2171120
