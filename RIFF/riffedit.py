@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # coding: UTF-8
 #-
-# Copyright © 2018 Thorsten Glaser <tg@mirbsd.de>
+# Copyright © 2018, 2020 Thorsten Glaser <tg@mirbsd.de>
 #
 # Provided that these terms and disclaimer and all copyright notices
 # are retained or reproduced in an accompanying document, permission
@@ -19,12 +19,19 @@
 # of said person’s immediate fault when using the work as intended.
 #-
 # python3 riffedit.py -d src.sf2  # dump info only
+# python3 riffedit.py -i src.sf2  # identify metadata (see below)
 # python3 riffedit.py src.sf2 dst.sf2 { [-az] 'chnk' 'content' } ...
 #  where -a means to align with NULs and -z to NUL-terminate
 #  chnk means the RIFF chunk, LIST<chnk>/chnk is also supported
 # Chunks currently need to exist in the input, insertion and deletion
 # is missing for some later version to add.
 # The comment field is limited to 65535 ASCII bytes, the others to 255.
+#
+# Metadata from a soundfont only includes chunks useful in copyright
+# tracking. It outputs the INFO chunks, using input ordering, in the
+# format “chunk_name \xFE chunk_body \xFF”, where both name and body
+# (properly UTF-8 encoded) have all characters not valid for XML re‐
+# moved or replaced with the OPTU-16 value or U+FFFD.
 #
 # You may also use this under the same terms as the Fluid (R3) soundfont.
 
@@ -233,6 +240,46 @@ def dumpriff(container, level=0, isinfo=False):
         if chunk.container is not None:
             dumpriff(chunk, level+1, chunk.chunkfmt == b'LIST<INFO>')
     print(indent + 'END level=%d' % level)
+
+if sys.argv[1] == '-i':
+    encode_table = {}
+    # bad characters in XML
+    for i in range(0, 32):
+        if i not in (0x09, 0x0A, 0x0D):
+            encode_table[i] = None
+    encode_table[0x7F] = 0xFFFD
+    for i in range(0x80, 0xA0):
+        encode_table[i] = 0xEF00 + i
+    for i in range(0xD800, 0xE000):
+        encode_table[i] = 0xFFFD
+    for i in range(0, 0x110000, 0x10000):
+        encode_table[i + 0xFFFE] = 0xFFFD
+        encode_table[i + 0xFFFF] = 0xFFFD
+    for i in range(0xFDD0, 0xFDF0):
+        encode_table[i] = 0xFFFD
+    # surrogateescape to OPTU-16
+    for i in range(128, 256):
+        encode_table[0xDC00 + i] = 0xEF00 + i
+    ident_encode_table = str.maketrans(encode_table)
+    del encode_table
+
+    def ident_encode(s):
+        return s.rstrip(b'\x00').\
+          decode(encoding='utf-8', errors='surrogateescape').\
+          translate(ident_encode_table).\
+          encode(encoding='utf-8', errors='replace')
+
+    if sys.argv[2] == '-':
+        f = sys.stdin.buffer
+    else:
+        f = open(sys.argv[2], 'rb')
+    riff = RIFFFile(f)
+    for chunk in riff[0][b'LIST<INFO>'].children:
+        if chunk.chunkname not in (b'ifil', b'isng', b'IPRD', b'ISFT'):
+            for x in (ident_encode(chunk.chunkname), b'\xFE',
+              ident_encode(chunk.print()), b'\xFF'):
+                sys.stdout.buffer.write(x)
+    sys.exit(0)
 
 print('START')
 if sys.argv[1] == '-d':
