@@ -1,0 +1,12 @@
+https://dba.stackexchange.com/users/113592/asumaran writes:
+
+doesn't work
+
+ERROR:  cannot drop constraint PK_cc64c972fd68c6bce3f9a5b1273 on table product_listing
+ because other objects depend on it
+DETAIL:  view product_listing_with_calculations depends on
+ constraint PK_cc64c972fd68c6bce3f9a5b1273 on table product_listing
+HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+CONTEXT:  SQL statement "ALTER TABLE ONLY public.product_listing
+ DROP CONSTRAINT "PK_cc64c972fd68c6bce3f9a5b1273";"
+PL/pgSQL function inline_code_block line 33 at EXECUTE –
