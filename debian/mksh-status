@@ -30,7 +30,7 @@ lynx -source https://buildd.debian.org/status/package.php?p=mksh | \
      -m './tr' \
       -i 'position() > 2' \
 	-o 'A: <' \
-	-v 'translate(./td[1], $linebreak, " ")' \
+	-v 'translate(translate(./td[1], $linebreak, " "), "  ↓", "")' \
 	-o '> <' \
 	-v 'translate(./td[3]/a/@href, $linebreak, " ")' \
 	-o '> :L' -n \
