@@ -102,8 +102,8 @@ while (( ++i < narchs )); do
 		EOF
 		)"
 		cat >>columnus <<-EOF
-			${archs[i]})mksh)$system)$mksh_klibc)$mksh_musl)$mksh_dietlibc)$mksh_glibc
-			 )lksh) ↑ version($vsn)$lksh_klibc)$lksh_musl)$lksh_dietlibc)$lksh_glibc
+			${archs[i]})mksh)${system:-⁉ unset})${mksh_klibc:-⁉ unset})${mksh_musl:-⁉ unset})${mksh_dietlibc:-⁉ unset})${mksh_glibc:-⁉ unset}
+			 )lksh) ↑ version(${vsn:-¿?})${lksh_klibc:-⁉ unset})${lksh_musl:-⁉ unset})${lksh_dietlibc:-⁉ unset})${lksh_glibc:-⁉ unset}
 		EOF
 	); else
 		cat >>columnus <<-EOF
@@ -123,6 +123,7 @@ ed -s tabularis <<-\EOF
 	,g/☒[^ ]*/s//[0;1;35;40m&/g
 	,g/✔[^ ]*/s//[0;1;32;40m&/g
 	,g/\( ↑[^(]*\)(\([^ ]*\) /s//[0;1;30;40m\1 [0;1m\2 /
+	,g/¿?/s//[31m&/g
 	1s/^/[0m/
 	1s/  */&| /g
 	1s/$/   /
