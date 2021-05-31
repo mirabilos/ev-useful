@@ -33,6 +33,8 @@ lynx -source https://buildd.debian.org/status/package.php?p=mksh | \
 	-v 'translate(translate(./td[1], $linebreak, " "), "  ↓", "")' \
 	-o '> <' \
 	-v 'translate(./td[3]/a/@href, $linebreak, " ")' \
+	-o '> <' \
+	-v 'translate(./td[3]/a, $linebreak, " ")' \
 	-o '> :L' -n \
       -b \
      -b \
@@ -41,8 +43,9 @@ lynx -source https://buildd.debian.org/status/package.php?p=mksh | \
 set -A archs
 narchs=0
 set -A logs
+set -A states
 
-while IFS=' ' read -r a arch log l; do
+while IFS=' ' read -r a arch log state l; do
 	[[ $a = A: ]] || die "arch $((narchs+1)) beginning broken: ${a@Q} ($arch)"
 	[[ $l = :L ]] || die "arch $((narchs+1)) ending broken: ${l@Q} ($arch)"
 	[[ $arch = '<'+([0-9a-z-])'>' ]] || die "arch $((narchs+1)) arch broken: ${arch@Q}"
@@ -56,6 +59,10 @@ while IFS=' ' read -r a arch log l; do
 		log=https://buildd.debian.org/status/${log#'<'}
 		log=${log%'>'}
 	fi
+	[[ $state = '<'*'>' ]] || \
+	    die "arch $((narchs+1)) state broken: ${state@Q} ($arch)"
+	state=${state#'<'}
+	state=${state%'>'}
 	case $arch in
 	(hurd-i386) arch=hurd ;;
 	(hurd*) die "another hurd* found: ${arch@Q}" ;;
@@ -64,6 +71,7 @@ while IFS=' ' read -r a arch log l; do
 	(k-*|kfreebsd*) die "another k(freebsd)* found: ${arch@Q}" ;;
 	esac
 	[[ -n $log ]] && logs[narchs]=$log
+	states[narchs]=$state
 	archs[narchs++]=$arch
 	# debugging
 	:||if [[ $arch = alpha ]]; then
@@ -101,9 +109,24 @@ while (( ++i < narchs )); do
 			${llc#*')'}
 		EOF
 		)"
+		case $vsn:${states[i]} {
+		(:Build-Attempted|:Failed)
+			vsn=$(sed --posix -n \
+			    '/^Version: /{s///p;q;}' \
+			    <arch."${archs[i]}")
+			if [[ -n $vsn ]]; then
+				vsn=⸘$vsn
+			else
+				vsn='(¿?'
+			fi
+			mksh_glibc=⸘${states[i]}${mksh_glibc:+ $mksh_glibc}
+			;;
+		(*)
+			vsn='('${vsn:-¿?}
+		}
 		cat >>columnus <<-EOF
 			${archs[i]})mksh)${system:-⁉ unset})${mksh_klibc:-⁉ unset})${mksh_musl:-⁉ unset})${mksh_dietlibc:-⁉ unset})${mksh_glibc:-⁉ unset}
-			 )lksh) ↑ version(${vsn:-¿?})${lksh_klibc:-⁉ unset})${lksh_musl:-⁉ unset})${lksh_dietlibc:-⁉ unset})${lksh_glibc:-⁉ unset}
+			 )lksh) ↑ version$vsn)${lksh_klibc:-⁉ unset})${lksh_musl:-⁉ unset})${lksh_dietlibc:-⁉ unset})${lksh_glibc:-⁉ unset}
 		EOF
 	); else
 		cat >>columnus <<-EOF
@@ -123,7 +146,9 @@ ed -s tabularis <<-\EOF
 	,g/☒[^ ]*/s//[0;1;35;40m&/g
 	,g/✔[^ ]*/s//[0;1;32;40m&/g
 	,g/\( ↑[^(]*\)(\([^ ]*\) /s//[0;1;30;40m\1 [0;1m\2 /
+	,g/\( ↑.*\)⸘\([^ ]*\) /s//[0;36;40m\1 [1m\2 /
 	,g/¿?/s//[31m&/g
+	,g/⸘/s//[0;1;36;40m/g
 	1s/^/[0m/
 	1s/  */&| /g
 	1s/$/   /
