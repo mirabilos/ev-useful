@@ -121,9 +121,19 @@ function process_alternateCodepoint($nam, $code, $alt, $body) {
 	global $hit;
 	global $inam;
 
-	/* skip alt: https://github.com/w3c/smufl/issues/195 */
+	/* cf. https://github.com/w3c/smufl/issues/195 (and 133) */
 	if ($nam === 'mensuralBlackSemibrevisVoid' && $alt === 'U-0001D1B9')
-		return (1);
+		return (0);
+	if ($nam === 'mensuralWhiteSemiminima' && $alt === 'U-0001D1BC')
+		return (0);
+	if ($nam === 'mensuralNoteheadMaximaVoid' && $alt === 'U-0001D1B6')
+		return (0);
+	if ($nam === 'mensuralNoteheadLongaVoid' && $alt === 'U-0001D1B7')
+		return (0);
+	if ($nam === 'mensuralNoteheadSemibrevisBlack' && $alt === 'U-0001D1BA')
+		return (0);
+	if ($nam === 'mensuralNoteheadSemibrevisVoid' && $alt === 'U-0001D1B9')
+		return (0);
 
 	/* duplicate check */
 	if (isset($hit[$alt]))
