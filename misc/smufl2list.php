@@ -123,7 +123,7 @@ function process_alternateCodepoint($nam, $code, $alt, $body) {
 
 	/* skip alt: https://github.com/w3c/smufl/issues/195 */
 	if ($nam === 'mensuralBlackSemibrevisVoid' && $alt === 'U-0001D1B9')
-		return;
+		return (1);
 
 	/* duplicate check */
 	if (isset($hit[$alt]))
@@ -137,6 +137,7 @@ function process_alternateCodepoint($nam, $code, $alt, $body) {
 	/* output line */
 	printf("%s\t%s [SMuFL:alternateCodepoint] (cf. %s)\n",
 	    $alt, $body, $code);
+	return (1);
 }
 
 /* duplicate codepoint check */
@@ -168,8 +169,8 @@ foreach (array_keys($inam) as $Nam) {
 	if (!($code = normaliseCodepoint($nam, 'codepoint')))
 		errx('no codepoint', array($nam => $inam[$nam]));
 	if (($alt = normaliseCodepoint($nam, 'alternateCodepoint'))) {
-		process_alternateCodepoint($nam, $code, $alt, $body);
-		$body .= ' (cf. ' . $alt . ')';
+		if (process_alternateCodepoint($nam, $code, $alt, $body))
+			$body .= ' (cf. ' . $alt . ')';
 	}
 	/* duplicate check */
 	if (isset($hit[$code]))
