@@ -38,11 +38,17 @@ cd libical
 
 function cvt {
 	local line
+	local s=0
 
 	while IFS= read -r line; do
 		line=${line%}
+		if [[ $s = 1 ]]; then
+			[[ $line = [\	\ ]* ]] && continue
+			s=0
+		fi
 		if [[ $line = TZID:* ]]; then
 			line=TZID:$name
+			s=1
 		fi
 		print -r -- "${line}"
 	done
