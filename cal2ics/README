@@ -1,0 +1,12 @@
+┌─────────┐
+│ cal2ics │
+└─────────┘
+
+This mksh script implements the second half of a BSD calendar(1)
+to iCalendar (*.ics) converter with the first part being changes
+within MirBSD’s calendar(1) implementation facilitating a parse-
+and-extract mode.
+
+The updatetz.sh supplement updates the ./tzdata.ics subdirectory
+of a VTIMEZONE-format (iCalendar) tzdata export, currently being
+skimmed off libical.
