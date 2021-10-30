@@ -197,7 +197,7 @@ function emit {
 }
 
 T=$(mktemp -d /tmp/cal2ics.XXXXXXXXXX) || die cannot create temporary directory
-calendar -PPf "$1" >"$T/p" || die cannot parse "${1@Q}" as calendar file
+calendar -PPf "$F" >"$T/p" || die cannot parse "${F@Q}" as calendar file
 print '>' >>"$T/p" || die huh?
 cd "$T" || die cannot change to temporary directory
 s=0
@@ -248,6 +248,8 @@ while IFS= read -r line; do
 				    die "unknown timezone ${tz@Q}"
 				tzs+=("$tz")
 			fi
+		else
+			tz=$localtime
 		fi
 		s=2
 		continue
