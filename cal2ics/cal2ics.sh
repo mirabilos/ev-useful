@@ -64,19 +64,20 @@ shift $((OPTIND - 1))
 if [[ $localtime = - ]]; then
 	localtime=$(readlink /etc/localtime) || \
 	    die cannot readlink /etc/localtime
+	[[ $localtime = /usr/share/zoneinfo/* ]] || \
+	    die "not a timezone: ${localtime@Q}"
+	localtime=${localtime#/usr/share/zoneinfo/}
 fi
-if [[ $localtime != /usr/share/zoneinfo/* || \
-    $localtime = */..?(/*) ]]; then
+if [[ $localtime = */..?(/*) ]]; then
 	die "invalid timezone ${localtime@Q}"
 fi
-localtime=${localtime#/usr/share/zoneinfo/}
 [[ -s $me/tzdata.ics/$localtime ]] || die "unknown timezone ${localtime@Q}"
 set -A tzs -- "$localtime"
 F=$1
 [[ $F = /* ]] || F=$PWD/$F
 [[ -f $F && -r $F ]] || die "no calendar file: ${F@Q}"
 FH=${|hsh "$F";}
-H=$(hostname -f) || H=$(hostname) || die hostname failed
+H=$(hostname -f 2>/dev/null) || H=$(hostname) || die hostname failed
 [[ -n $H ]] || die hostname empty
 dtstamp=$(date -u +'%Y%m%dT%H%M%SZ')
 
