@@ -10,3 +10,6 @@ and-extract mode.
 The updatetz.sh supplement updates the ./tzdata.ics subdirectory
 of a VTIMEZONE-format (iCalendar) tzdata export, currently being
 skimmed off libical.
+
+See https://github.com/MirBSD/calendar for a Debian packaging of
+MirBSD calendar(1) to use this with.
