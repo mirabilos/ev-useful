@@ -12,4 +12,7 @@ of a VTIMEZONE-format (iCalendar) tzdata export, currently being
 skimmed off libical.
 
 See https://github.com/MirBSD/calendar for a Debian packaging of
-MirBSD calendar(1) to use this with.
+MirBSD calendar(1) to use this with. Binaries for bullseye (11),
+hirsute (21.04) and up can be obtained at:
+• http://www.mirbsd.org/~tg/Debs/debidx.htm (for Debian proper)
+• https://launchpad.net/~mirabilos/+archive/ubuntu/ppa (*buntu)
