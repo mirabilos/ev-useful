@@ -97,7 +97,10 @@ while (( ++i < narchs )); do
 	if [[ -n ${logs[i]} ]]; then (
 		llc=$(sed --posix -n \
 		    '/^D:loglibc:final(\([^)]*\)) \(.*\) finishing$/{s//\1)\2/p;q;}' \
-		    <arch."${archs[i]}")
+		    <arch."${archs[i]}" | sed --posix \
+		    -e 'y/()/{}/' -e 's/}/)/' \
+		    -e 's/_{[^} ]*}//g' \
+		    -e "s/'/'\\\\''/g" -e 's/=\([^ ]*\)/='\''\1'\''/g')
 		vsn=${llc%%')'*}
 		eval "$(sed --posix \
 		    -e 's/_(\([0-9]*\)_\([^) ]\)[^) ]*)\([a-z]\)/\3\/\1\2/g' \
