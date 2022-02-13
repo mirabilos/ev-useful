@@ -19,7 +19,24 @@
 # damage or existence of a defect, except proven that it results out
 # of said person’s immediate fault when using the work as intended.
 
-""" SSV reader/writer and CSV writer library """
+r"""SSV reader/writer and CSV writer library
+
+This module offers the following classes:
+
+- CSVInvalidCharacterError, CSVShapeError -- Exception classes
+  that can be thrown by code from this library
+
+- CSVWriter -- configurable CSV row formatter and writer that
+  ensures the output is quoted properly and in rectangular shape
+
+- SSVWriter -- CSVWriter configured to produce SSV output
+
+- SSVReader -- class to read SSV files, returning lists of str|bytes
+  (depending on the input file binary flag)
+
+When run directly, it acts as SSV to CSV converter, which may be of
+limited use but demonstrates how to use the module somewhat.
+"""
 
 __all__ = [
     "CSVInvalidCharacterError",
@@ -30,191 +47,238 @@ __all__ = [
 ]
 
 import re
+import sys
+from typing import AnyStr, IO, List, Optional, Pattern, Union
+
 
 class CSVShapeError(Exception):
-    """ Data to write did not have a consistent amount of columns """
-    def __init__(self, want, got):
-        Exception.__init__(self, 'got %d field%s but wanted %d' % \
-          (got, got != 1 and 's' or '', want))
-        self.want = want
-        self.got = got
+    r"""Error: data to write did not have a consistent amount of columns.
 
-class CSVInvalidCharacterError(Exception):
-    """ Disallowed characters in field or row """
-    pass
-
-class CSVWriter(object):
-    """ CSV writer library, configurable
-
-    Separators, fields, etc. must be str; bytes is not supported.
+    The message string is descriptive, but the want and got fields of
+    an object may be user-accessed.
     """
 
-    # never allow embedded NUL
-    invfind = re.compile('[\x00]')
-    # to normalise embedded newlines
-    nlfind = re.compile('(?:\r\n?|(?<!\r)\n)')
-    # to ensure rectangular shape of output
-    ncols = -1
+    def __init__(self, want: int, got: int) -> None:
+        Exception.__init__(self, 'got %d column%s but wanted %d' %
+          (got, got != 1 and 's' or '', want))
+        self.want = want                        # type: int
+        self.got = got                          # type: int
+
+
+class CSVInvalidCharacterError(Exception):
+    r"""Error: disallowed characters in (read) row or (writer) cell.
+
+    The message is deliberately constant in order to not show the actual
+    cell or row content in logs, etc. (in case it’s a password) but the
+    actual content is available in the questionable_content field.
+    """
+
+    def __init__(self, value: AnyStr,
+      what: str = 'prohibited character in cell') -> None:
+        Exception.__init__(self, what)
+        self.questionable_content = value       # type: Union[str, bytes]
+
+
+class CSVWriter(object):
+    r"""CSV writer library, configurable.
+
+    The defaults follow RFC 4180 and thus are suitable for use with most
+    environments; newlines embedded in cell data are normalised (from
+    ASCII/Unix/Mac to ASCII) by default, every cell data is quoted.
+
+    The following arguments configure the writer instance:
+    - sep -- output cell separator: ',' (default) or ';' or '\t'
+    - quot -- output quote character (default '"'), escape by doubling;
+        None to disable quoting and disallow embedded newlines (but not
+        double quotes; the caller must not pass any if the result needs
+        to conform to the RFC or just use default quoting of course)
+    - eol -- output line terminator: '\r\n' or (Unix) '\n' or (Mac) '\r'
+    - qnl -- output embedded newline, should match eol (default '\r\n');
+        None to disable embedded newline normalisation
+
+    These arguments must all be str, bytes is not supported. Cell data
+    passed in that is not str will be stringified. Rows are written or
+    returned as str; however, ASCII or a compatible encoding needs to
+    be used (for conformance and portability); UTF-8 is ideal.
+
+    Note: RFC 4180 permits only printable ASCII and space and, if quoted,
+    newlines in cell data but this library permits any character except
+    NUL, (unquoted) CR and LF.
+    """
+
+    # embedded NUL is never permitted
+    _invf = re.compile('[\x00]')                # type: Pattern[str]
+    # normalise embedded newlines from this
+    _nlf = re.compile('\r\n?|(?<!\r)\n')        # type: Pattern[str]
+    # count to ensure rectangular shape of output
+    _ncols = -1                                 # type: int
 
     # default line ending is ASCII (“DOS”)
-    def __init__(self, sep=',', quot='"', eol='\r\n', qnl='\r\n'):
-        """ Configure a new CSV writer instance
-
-        The defaults are suitable for use with most environments;
-        changing just the separator to ';' is probably the one
-        thing needed for almost every other environment.
-
-         sep - output field separator: ',' or ';' or '\\t'
-         quot - output field quote, will be doubled to escape
-         eol - output line terminator: '\\r\\n' or (Unix) '\\n'
-         qnl - embedded newlines are normalised to this, None disables
-        """
-
+    def __init__(self, sep: str = ',', quot: Optional[str] = '"',
+      eol: str = '\r\n', qnl: Optional[str] = '\r\n') -> None:
         if quot is None:
-            self.quots = ''
-            self.quotd = ''
+            # cell joiner ('","')
+            self._sep = sep                     # type: str
+            # one quote, e.g. for line beginning/end
+            self._quots = ''                    # type: str
+            # two quotes to escape
+            self._quotd = ''                    # type: str
             # forbid newlines if we cannot quote them
-            self.invfind = re.compile('[\x00\r\n]')
+            self._invf = re.compile('[\x00\r\n]')
         else:
-            self.quots = quot
-            self.quotd = quot + quot
-        self.quot = quot
-        self.sep = self.quots + sep + self.quots
-        self.nlrepl = qnl
-        self.eol = eol
+            self._sep = quot + sep + quot
+            self._quots = quot
+            self._quotd = quot + quot
+        # None if not quoting
+        self._quot = quot                       # type: Optional[str]
+        # None or embedded newline replacement string
+        self._nlrpl = qnl                       # type: Optional[str]
+        # EOL string
+        self._eol = eol                         # type: str
 
-    def _mapfield(self, field):
-        if not isinstance(field, str):
-            field = str(field)
-        if self.invfind.search(field) is not None:
-            raise CSVInvalidCharacterError(field)
-        if self.nlrepl is not None:
-            field = self.nlfind.sub(self.nlrepl, field)
-        if self.quot is not None:
-            field = field.replace(self.quots, self.quotd)
-        return field
+    def _mapcell(self, cell) -> str:
+        if isinstance(cell, str):
+            cstr = cell                         # type: str
+        else:
+            cstr = str(cell)
+        if self._invf.search(cstr) is not None:
+            raise CSVInvalidCharacterError(cstr)
+        if self._nlrpl is not None:
+            cstr = self._nlf.sub(self._nlrpl, cstr)
+        if self._quot is not None:
+            cstr = cstr.replace(self._quots, self._quotd)
+        return cstr
 
-    def write(self, *args):
-        """ Print a CSV line (row) to standard output
+    def _write(self, *args) -> None:
+        r"""Print a CSV line (row) to standard output.
 
-         *args - list of fields
+        - *args -- cell data by columns
+
+        Note: reconfigures the newline mode of sys.stdout once
         """
-
         print(self.format(*args), end='')
 
-    def format(self, *args):
-        """ Produce a CSV row from fields
+    def write(self, *args) -> None:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(newline='\n')    # type: ignore
+        setattr(CSVWriter, 'write', getattr(CSVWriter, '_write'))
+        delattr(CSVWriter, '_write')
+        return self.write(*args)
 
-        The result contains the trailing newline needed.
+    write.__doc__ = _write.__doc__
 
-         *args - list of fields
+    def format(self, *args) -> str:
+        r"""Produce a CSV row from cells.
 
-        Returns the CSV row as a string
+        - *args -- cell data by columns
+
+        Returns the row, including the trailing newline, as string.
         """
+        if self._ncols == -1:
+            self._ncols = len(args)
+        elif self._ncols != len(args):
+            raise CSVShapeError(self._ncols, len(args))
+        cells = map(self._mapcell, args)
+        return self._quots + self._sep.join(cells) + self._quots + self._eol
 
-        if self.ncols == -1:
-            self.ncols = len(args)
-        elif self.ncols != len(args):
-            raise CSVShapeError(self.ncols, len(args))
-        return self.quots + self.sep.join(map(self._mapfield, args)) + \
-          self.quots + self.eol
 
 class SSVWriter(CSVWriter):
-    """ SSV writer library
+    r"""SSV writer library.
+
+    This subclass sets up a CSVWriter instance to produce SSV (see below).
+    The writer supports str, or stringified arguments, only, not bytes.
+    The caller must ensure the encoding is UTF-8 (ideally), or at least
+    ASCII-compatible (CR, LF and \x1F require identity mapping), and that
+    CR or LF characters output are not converted.
 
     shell-parseable separated values (or separator-separated values)
     is an idea to make CSV into something usable:
 
-    • newline (\\x0A) is row separator
-    • unit separator (\\x1F) is column separator
+    • newline (\x0A) is row separator
+    • unit separator (\x1F) is column separator
     • n̲o̲ quotes or escape characters
-    • carriage return (\\x0D) represents embedded newlines in cells
+    • carriage return (\x0D) represents embedded newlines in cells
 
     Cell content is, in theory, arbitrary binary except NUL and
-    the separators (\\x1F and \\x0A). In practice it should be UTF-8.
-    This library supports str on the Python3 side only, not bytes.
+    the separators (\x1F and \x0A). In practice it should be UTF-8.
 
     SSV can be easily read from shell scripts:
 
-        while IFS=$'\\x1F' read -r field1 field2…; do
+        while IFS=$'\x1F' read -r col1 col2…; do
             # do something
         done
     """
 
-    def __init__(self):
-        """ Initialise a new CSV writer instance to SSV """
+    def __init__(self) -> None:
+        CSVWriter.__init__(self, sep='\x1F', quot=None, eol='\n', qnl='\r')
+        # not permitted in SSV data
+        self._invf = re.compile('[\x00\x1F]')
 
-        CSVWriter.__init__(self, '\x1F', None, '\n', '\r')
-        # not permitted in SSV fields
-        self.invfind = re.compile('[\x00\x1F]')
 
 class SSVReader(object):
-    """ SSV reader library
+    r"""SSV reader library.
+
+    This library is initialised with a files-like object that must
+    support .readline() and either must not use newline conversion
+    or support .reconfigure() as in _io.TextIOWrapper, which is
+    called with newline='\n' if it exists. SSVReader.read() will
+    then proceed to read from it.
 
     See SSVWriter about the SSV format.
     """
 
-    _codes = (
-        ('\n', '\r', '\x1F', '\r\n', '\x00'),
-        (b'\n', b'\r', b'\x1F', b'\r\n', b'\x00'),
-    )
-
-    def __init__(self, f):
-        """ Initialise a new SSV reader
-
-        The passed files-like object must support .readline() and
-        must not use newline conversion (or support .reconfigure()
-        as in _io.TextIOWrapper, which is called with newline='\\n'
-        for the f object if hasattr).
-
-         f - files-like object read from
-        """
-
-        if hasattr(f, 'reconfigure'):
+    def __init__(self, file: IO) -> None:
+        if hasattr(file, 'reconfigure'):
             # see https://bugs.python.org/issue46695 though
-            f.reconfigure(newline='\n')
-        self.f = f
+            file.reconfigure(newline='\n')      # type: ignore
+        self.f = file                           # type: IO
 
-    def read(self):
-        """ Read and decode one SSV line
-
-        Returns a list of fields, or None on EOF
-        """
-
-        s = self.f.readline()
-        if not s:
-            return None
-
-        if isinstance(s, bytes):
-            codes = self._codes[1]
-        elif isinstance(s, str):
-            codes = self._codes[0]
-        else:
-            raise TypeError()
-        lf, cr, us, nl, nul = codes
+    @staticmethod
+    def _read(s: AnyStr, lf: AnyStr, cr: AnyStr, us: AnyStr, nl: AnyStr,
+      nul: AnyStr) -> List[AnyStr]:
         if s.find(nul) != -1:
-            raise CSVInvalidCharacterError(s)
-
-        s = s.rstrip(lf)
+            raise CSVInvalidCharacterError(s, 'NUL in row')
+        if s[-1:] != lf:
+            raise CSVInvalidCharacterError(s, 'unterminated row')
+        s = s[:-1]
         if s.find(lf) != -1:
-            raise CSVInvalidCharacterError(s)
+            raise CSVInvalidCharacterError(s, 'LF in row')
         return s.replace(cr, nl).split(us)
 
+    def read(self) -> Optional[List[AnyStr]]:
+        r"""Read and decode one SSV line.
+
+        Returns a list of cells, or None on EOF.
+        """
+        line = self.f.readline()                # type: Optional[AnyStr]
+        if not line:
+            return None
+        if isinstance(line, str):
+            return self._read(line, '\n', '\r', '\x1F', '\r\n', '\x00')
+        if isinstance(line, bytes):
+            return self._read(line, b'\n', b'\r', b'\x1F', b'\r\n', b'\x00')
+        raise TypeError()
+
+
 # mostly example of how to use this
-if __name__ == "__main__":
+def _main() -> None:
     newline_ways = {
         'ascii': '\r\n',
         'unix': '\n',
         'mac': '\r',
     }
-    import argparse
     p = argparse.ArgumentParser(description='Converts SSV to CSV.', add_help=False)
     g = p.add_argument_group('Options')
-    g.add_argument('-h', action='help', help='show this help message and exit')
-    g.add_argument('-s', metavar='sep', help='field separator, e.g. \x27,\x27 (default: tab)', default='\t')
-    g.add_argument('-q', metavar='qch', help='quote character, e.g. \x27\x22\x27 (default: none)', default=None)
-    g.add_argument('-n', metavar='eoltype', choices=list(newline_ways.keys()), help='line endings (ascii (default), unix, mac)', default='ascii')
-    g.add_argument('-P', metavar='preset', choices=['std', 'sep', 'ssv'], help='predefined config (std=RFC 4180, sep=Excel header, ssv=SSV)')
+    g.add_argument('-h', action='help',
+      help='show this help message and exit')
+    g.add_argument('-s', metavar='sep',
+      help='cell separator, e.g. \x27,\x27 (default: tab)', default='\t')
+    g.add_argument('-q', metavar='qch',
+      help='quote character, e.g. \x27\x22\x27 (default: none)', default=None)
+    g.add_argument('-n', metavar='eoltype', choices=list(newline_ways.keys()),
+      help='line endings (ascii (default), unix, mac)', default='ascii')
+    g.add_argument('-P', metavar='preset', choices=['std', 'sep', 'ssv'],
+      help='predefined config (std=RFC 4180, sep=Excel header, ssv=SSV)')
     g = p.add_argument_group('Arguments')
     g.add_argument('file', help='SSV file to read, "-" for stdin (default)', nargs='?', default='-')
     args = p.parse_args()
@@ -225,17 +289,27 @@ if __name__ == "__main__":
     nl = newline_ways[args.n]
     if args.P == 'sep':
         print('sep=%s' % args.s, end=nl)
-    if args.P == 'ssv':
-        w = SSVWriter()
-    else:
+    if args.P != 'ssv':
         w = CSVWriter(args.s, args.q, nl, nl)
+    else:
+        w = SSVWriter()
+
     def _convert(f):
         r = SSVReader(f)
-        while (l := r.read()) is not None:
-            w.write(*l)
+        # no walrus in Python 3.7 yet ☹
+        while True:
+            row = r.read()
+            if row is None:
+                break
+            w.write(*row)
+
     if args.file == '-':
-        import sys
         _convert(sys.stdin)
     else:
-        with open(args.file, 'r') as f:
-            _convert(f)
+        with open(args.file, 'r') as file:
+            _convert(file)
+
+
+if __name__ == "__main__":
+    import argparse
+    _main()
