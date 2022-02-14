@@ -287,6 +287,8 @@ def _main() -> None:
         args.q = '"'
         args.n = 'ascii'
     nl = newline_ways[args.n]
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(newline='\n')        # type: ignore
     if args.P == 'sep':
         print('sep=%s' % args.s, end=nl)
     if args.P != 'ssv':
