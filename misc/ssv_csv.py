@@ -27,10 +27,12 @@ This module offers the following classes:
 - CSVInvalidCharacterError, CSVShapeError -- Exception classes
   that can be thrown by code from this library
 
-- CSVWriter -- configurable CSV row formatter and writer that
+- CSVPrinter -- configurable CSV row formatter and writer that
   ensures the output is quoted properly and in rectangular shape
 
-- SSVWriter -- CSVWriter configured to produce SSV output
+- SSVPrinter -- CSVPrinter configured to produce SSV output
+
+- CSVWriter, SSVWriter -- same but writing to a file-like object
 
 - SSVReader -- class to read SSV files, returning lists of str|bytes
   (depending on the input file binary flag)
@@ -42,15 +44,17 @@ usage (help).
 
 __all__ = [
     "CSVInvalidCharacterError",
+    "CSVPrinter",
     "CSVShapeError",
     "CSVWriter",
+    "SSVPrinter",
     "SSVReader",
     "SSVWriter",
 ]
 
 import re
 import sys
-from typing import AnyStr, IO, List, Optional, Pattern, Union
+from typing import AnyStr, IO, List, Optional, Pattern, TextIO, Union
 
 
 class CSVShapeError(Exception):
@@ -81,7 +85,7 @@ class CSVInvalidCharacterError(Exception):
         self.questionable_content = value       # type: Union[str, bytes]
 
 
-class CSVWriter(object):
+class CSVPrinter(object):
     r"""CSV writer library, configurable.
 
     The defaults follow RFC 4180 and thus are suitable for use with most
@@ -163,8 +167,8 @@ class CSVWriter(object):
         """
         if hasattr(sys.stdout, 'reconfigure'):
             sys.stdout.reconfigure(newline='\n')    # type: ignore
-        setattr(CSVWriter, 'write', getattr(CSVWriter, '_write'))
-        delattr(CSVWriter, '_write')
+        setattr(CSVPrinter, 'write', getattr(CSVPrinter, '_write'))
+        delattr(CSVPrinter, '_write')
         return self.write(*args)
 
     def _write(self, *args) -> None:
@@ -187,10 +191,64 @@ class CSVWriter(object):
         return self._quots + self._sep.join(cells) + self._quots + self._eol
 
 
-class SSVWriter(CSVWriter):
+class CSVWriter(CSVPrinter):
+    r"""CSV writer library, configurable.
+
+    The defaults follow RFC 4180 and thus are suitable for use with most
+    environments; newlines embedded in cell data are normalised (from
+    ASCII/Unix/Mac to ASCII) by default, every cell data is quoted.
+
+    The following arguments configure the writer instance:
+    - file -- file-like object to output CSV to
+    - sep -- output cell separator: ',' (default) or ';' or '\t'
+    - quot -- output quote character (default '"'), escape by doubling;
+        None to disable quoting and disallow embedded newlines (but not
+        double quotes; the caller must not pass any if the result needs
+        to conform to the RFC or just use default quoting of course)
+    - eol -- output line terminator: '\r\n' or (Unix) '\n' or (Mac) '\r'
+    - qnl -- output embedded newline, should match eol (default '\r\n');
+        None to disable embedded newline normalisation
+
+    These arguments must all be str, bytes is not supported. Cell data
+    passed in that is not str will be stringified. Rows are written or
+    returned as str; however, ASCII or a compatible encoding needs to
+    be used (for conformance and portability); UTF-8 is ideal.
+
+    Note: RFC 4180 permits only printable ASCII and space and, if quoted,
+    newlines in cell data but this library permits any character except
+    NUL, (unquoted) CR and LF.
+
+    Note: the file argument will be reconfigured to disable automatic
+    '\n' conversion; if prepending data (e.g. a sep= line for MS Excel)
+    use the writeln() method.
+    """
+
+    def __init__(self, file: TextIO, sep: str = ',', quot: Optional[str] = '"',
+      eol: str = '\r\n', qnl: Optional[str] = '\r\n') -> None:
+        CSVPrinter.__init__(self, sep, quot, eol, qnl)
+        # disable any automatic newline conversion if preset
+        file.reconfigure(newline='\n')          # type: ignore
+        self.outfile = file
+
+    def write(self, *args) -> None:
+        r"""Print a CSV line (row) to the output file.
+
+        - *args -- cell data by columns
+        """
+        print(self.format(*args), end='', file=self.outfile)
+
+    def writeln(self, line: str) -> None:
+        r"""Print an arbitrary nōn-CSV line to the output file.
+
+        - line -- str to output; trailing newline is automatically added
+        """
+        print(line, end=self._eol, file=self.outfile)
+
+
+class SSVPrinter(CSVPrinter):
     r"""SSV writer library.
 
-    This subclass sets up a CSVWriter instance to produce SSV (see below).
+    This subclass sets up a CSVPrinter instance to produce SSV (see below).
     The writer supports str, or stringified arguments, only, not bytes.
     The caller must ensure the encoding is UTF-8 (ideally), or at least
     ASCII-compatible (CR, LF and \x1F require identity mapping), and that
@@ -215,9 +273,20 @@ class SSVWriter(CSVWriter):
     """
 
     def __init__(self) -> None:
-        CSVWriter.__init__(self, sep='\x1F', quot=None, eol='\n', qnl='\r')
+        CSVPrinter.__init__(self, sep='\x1F', quot=None, eol='\n', qnl='\r')
         # not permitted in SSV data
         self._invf = re.compile('[\x00\x1F]')
+
+
+class SSVWriter(CSVWriter):
+    r"""SSV writer library (same as SSVPrinter except to file)"""
+    def __init__(self, file: TextIO) -> None:
+        CSVWriter.__init__(self, file, sep='\x1F', quot=None, eol='\n', qnl='\r')
+        # not permitted in SSV data
+        self._invf = re.compile('[\x00\x1F]')
+
+
+SSVWriter.__doc__ = SSVPrinter.__doc__
 
 
 class SSVReader(object):
@@ -229,7 +298,7 @@ class SSVReader(object):
     called with newline='\n' if it exists. SSVReader.read() will
     then proceed to read from it.
 
-    See SSVWriter about the SSV format.
+    See SSVPrinter about the SSV format.
     """
 
     def __init__(self, file: IO) -> None:
@@ -299,9 +368,9 @@ def _main() -> None:
     if args.P == 'sep':
         print('sep=%s' % args.s, end=nl)
     if args.P != 'ssv':
-        w = CSVWriter(args.s, args.q, nl, nl)
+        w = CSVPrinter(args.s, args.q, nl, nl)
     else:
-        w = SSVWriter()
+        w = SSVPrinter()
 
     def _convert(f):
         r = SSVReader(f)
