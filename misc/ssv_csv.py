@@ -3,6 +3,7 @@
 #-
 # Copyright © 2015, 2017, 2020, 2022
 #   Thorsten Glaser <t.glaser@tarent.de>
+# Licensor: tarent solutions GmbH
 #
 # Provided that these terms and disclaimer and all copyright notices
 # are retained or reproduced in an accompanying document, permission
@@ -35,7 +36,8 @@ This module offers the following classes:
   (depending on the input file binary flag)
 
 When run directly, it acts as SSV to CSV converter, which may be of
-limited use but demonstrates how to use the module somewhat.
+limited use but demonstrates how to use the module somewhat; -h for
+usage (help).
 """
 
 __all__ = [
@@ -66,7 +68,7 @@ class CSVShapeError(Exception):
 
 
 class CSVInvalidCharacterError(Exception):
-    r"""Error: disallowed characters in (read) row or (writer) cell.
+    r"""Error: disallowed characters in cell (writer) / row (reader).
 
     The message is deliberately constant in order to not show the actual
     cell or row content in logs, etc. (in case it’s a password) but the
@@ -108,7 +110,7 @@ class CSVWriter(object):
 
     # embedded NUL is never permitted
     _invf = re.compile('[\x00]')                # type: Pattern[str]
-    # normalise embedded newlines from this
+    # normalise embedded newlines (match)
     _nlf = re.compile('\r\n?|(?<!\r)\n')        # type: Pattern[str]
     # count to ensure rectangular shape of output
     _ncols = -1                                 # type: int
@@ -149,23 +151,26 @@ class CSVWriter(object):
             cstr = cstr.replace(self._quots, self._quotd)
         return cstr
 
-    def _write(self, *args) -> None:
+    def write(self, *args) -> None:
         r"""Print a CSV line (row) to standard output.
 
         - *args -- cell data by columns
 
-        Note: reconfigures the newline mode of sys.stdout once
+        Note: reconfigures the newline mode of sys.stdout once,
+        but make sure to run sys.stdout.reconfigure(newline='\n')
+        e.g. when emitting an MS Excel sep= line and get the line
+        ending for that right; see _main() for an example.
         """
-        print(self.format(*args), end='')
-
-    def write(self, *args) -> None:
         if hasattr(sys.stdout, 'reconfigure'):
             sys.stdout.reconfigure(newline='\n')    # type: ignore
         setattr(CSVWriter, 'write', getattr(CSVWriter, '_write'))
         delattr(CSVWriter, '_write')
         return self.write(*args)
 
-    write.__doc__ = _write.__doc__
+    def _write(self, *args) -> None:
+        print(self.format(*args), end='')
+
+    _write.__doc__ = write.__doc__
 
     def format(self, *args) -> str:
         r"""Produce a CSV row from cells.
@@ -267,8 +272,10 @@ def _main() -> None:
         'unix': '\n',
         'mac': '\r',
     }
-    p = argparse.ArgumentParser(description='Converts SSV to CSV.', add_help=False)
-    g = p.add_argument_group('Options')
+    p = argparse.ArgumentParser(description='Converts SSV to CSV.',
+      # part of https://bugs.python.org/issue46700 workaround
+      add_help=False)
+    g = p.add_argument_group('Options')     # issue46700
     g.add_argument('-h', action='help',
       help='show this help message and exit')
     g.add_argument('-s', metavar='sep',
@@ -279,7 +286,7 @@ def _main() -> None:
       help='line endings (ascii (default), unix, mac)', default='ascii')
     g.add_argument('-P', metavar='preset', choices=['std', 'sep', 'ssv'],
       help='predefined config (std=RFC 4180, sep=Excel header, ssv=SSV)')
-    g = p.add_argument_group('Arguments')
+    g = p.add_argument_group('Arguments')   # issue46700
     g.add_argument('file', help='SSV file to read, "-" for stdin (default)', nargs='?', default='-')
     args = p.parse_args()
     if args.P in ('std', 'sep'):
