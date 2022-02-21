@@ -281,12 +281,14 @@ class SSVPrinter(CSVPrinter):
 class SSVWriter(CSVWriter):
     r"""SSV writer library (same as SSVPrinter except to file)"""
     def __init__(self, file: TextIO) -> None:
+        # pylint: disable=C0301
         CSVWriter.__init__(self, file, sep='\x1F', quot=None, eol='\n', qnl='\r')
         # not permitted in SSV data
         self._invf = re.compile('[\x00\x1F]')
 
 
-SSVWriter.__doc__ = SSVPrinter.__doc__
+if SSVPrinter.__doc__ is not None:
+    SSVWriter.__doc__ = SSVPrinter.__doc__.replace('CSVPrinter', 'CSVWriter')
 
 
 class SSVReader(object):
@@ -308,16 +310,16 @@ class SSVReader(object):
         self.f = file                           # type: IO
 
     @staticmethod
-    def _read(s: AnyStr, lf: AnyStr, cr: AnyStr, us: AnyStr, nl: AnyStr,
+    def _read(line: AnyStr, lf: AnyStr, cr: AnyStr, us: AnyStr, nl: AnyStr,
       nul: AnyStr) -> List[AnyStr]:
-        if s.find(nul) != -1:
-            raise CSVInvalidCharacterError(s, 'NUL in row')
-        if s[-1:] != lf:
-            raise CSVInvalidCharacterError(s, 'unterminated row')
-        s = s[:-1]
-        if s.find(lf) != -1:
-            raise CSVInvalidCharacterError(s, 'LF in row')
-        return s.replace(cr, nl).split(us)
+        if line.find(nul) != -1:
+            raise CSVInvalidCharacterError(line, 'NUL in row')
+        if line[-1:] != lf:
+            raise CSVInvalidCharacterError(line, 'unterminated row')
+        line = line[:-1]
+        if line.find(lf) != -1:
+            raise CSVInvalidCharacterError(line, 'LF in row')
+        return line.replace(cr, nl).split(us)
 
     def read(self) -> Optional[List[AnyStr]]:
         r"""Read and decode one SSV line.
@@ -336,6 +338,7 @@ class SSVReader(object):
 
 # mostly example of how to use this
 def _main() -> None:
+    # pylint: disable=C0103
     newline_ways = {
         'ascii': '\r\n',
         'unix': '\n',
@@ -356,7 +359,8 @@ def _main() -> None:
     g.add_argument('-P', metavar='preset', choices=['std', 'sep', 'ssv'],
       help='predefined config (std=RFC 4180, sep=Excel header, ssv=SSV)')
     g = p.add_argument_group('Arguments')   # issue46700
-    g.add_argument('file', help='SSV file to read, "-" for stdin (default)', nargs='?', default='-')
+    g.add_argument('file', nargs='?',
+      help='SSV file to read, "-" for stdin (default)', default='-')
     args = p.parse_args()
     if args.P in ('std', 'sep'):
         args.s = ','
