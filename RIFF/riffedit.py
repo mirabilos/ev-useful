@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # coding: UTF-8
 #-
-# Copyright © 2018, 2020 Thorsten Glaser <tg@mirbsd.de>
+# Copyright © 2018, 2020 mirabilos <tg@debian.org>
 #
 # Provided that these terms and disclaimer and all copyright notices
 # are retained or reproduced in an accompanying document, permission

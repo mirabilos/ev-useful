@@ -2,7 +2,7 @@
 # $Id: report.cgi 4042 2014-05-23 09:30:40Z tglase $
 #-
 # Copyright © 2009, 2010, 2011, 2012, 2013, 2014
-#	Thorsten Glaser <t.glaser@tarent.de>
+#	mirabilos <t.glaser@tarent.de>
 #
 # Provided that these terms and disclaimer and all copyright notices
 # are retained or reproduced in an accompanying document, permission

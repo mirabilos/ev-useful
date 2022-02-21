@@ -3,7 +3,7 @@
 # $Id: tools.py 660 2009-10-01 09:17:51Z tglase $
 #-
 # Copyright © 2009
-#   Thorsten Glaser <t.glaser@tarent.de>
+#       mirabilos <t.glaser@tarent.de>
 #
 # Provided that these terms and disclaimer and all copyright notices
 # are retained or reproduced in an accompanying document, permission

@@ -1,7 +1,7 @@
 # $Id: findmail.pl 824 2010-01-15 13:28:47Z tglase $
 #-
 # Copyright © 2009
-#	Thorsten Glaser <t.glaser@tarent.de>
+#	mirabilos <t.glaser@tarent.de>
 # All rights reserved.
 #-
 # Derived from Email::Find 0.10

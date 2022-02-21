@@ -1,7 +1,7 @@
 ' $Id: wincktfn.vbs 3875 2013-12-11 13:39:34Z tglase $
 ' -
 ' Copyright (c) 2011, 2012, 2013
-'	Thorsten Glaser <t.glaser@tarent.de>
+'	mirabilos <t.glaser@tarent.de>
 '
 ' Provided that these terms and disclaimer and all copyright notices
 ' are retained or reproduced in an accompanying document, permission

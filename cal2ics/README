@@ -9,7 +9,8 @@ and-extract mode.
 
 The updatetz.sh supplement updates the ./tzdata.ics subdirectory
 of a VTIMEZONE-format (iCalendar) tzdata export, currently being
-skimmed off libical.
+skimmed off libical. These are algorithmically (vzic) converted,
+origin is the IANA timezone database data files, which are PD.
 
 See https://github.com/MirBSD/calendar for a Debian packaging of
 MirBSD calendar(1) to use this with. Binaries for bullseye (11),

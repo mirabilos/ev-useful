@@ -1,4 +1,5 @@
 #!/bin/mksh
+# © mirabilos Ⓕ MirBSD
 
 unset LANGUAGE
 export LC_ALL=C.UTF-8

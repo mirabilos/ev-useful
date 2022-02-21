@@ -2,7 +2,7 @@
 # coding: utf-8
 #-
 # Copyright © 2015, 2017, 2020, 2022
-#   Thorsten Glaser <t.glaser@tarent.de>
+#       mirabilos <t.glaser@tarent.de>
 # Licensor: tarent solutions GmbH
 #
 # Provided that these terms and disclaimer and all copyright notices
