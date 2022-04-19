@@ -40,6 +40,10 @@ This module offers the following classes:
 When run directly, it acts as SSV to CSV converter, which may be of
 limited use but demonstrates how to use the module somewhat; -h for
 usage (help).
+
+See also:
+- https://github.com/mirabilos/shellsnippets/tree/master/mksh/ssv
+- https://search.maven.org/artifact/org.evolvis.tartools/csvfile
 """
 
 __all__ = [
