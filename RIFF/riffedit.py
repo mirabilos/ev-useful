@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # coding: UTF-8
 #-
-# Copyright © 2018, 2020 mirabilos <tg@debian.org>
+# Copyright © 2018, 2020, 2022 mirabilos <tg@debian.org>
 #
 # Provided that these terms and disclaimer and all copyright notices
 # are retained or reproduced in an accompanying document, permission
@@ -43,11 +43,14 @@ import sys
 assert(sys.version_info[0] >= 3)
 
 class RIFFChunk(object):
-    def __init__(self, parent):
+    def __init__(self, parent, nopadding=False):
         self.parent = parent
         self.file = parent
         while isinstance(self.file, RIFFChunk):
             self.file = self.file.parent
+        # SF3 format violation workaround, read-only; tracked
+        # at https://github.com/musescore/sftools/issues/36
+        self.nopadding = nopadding
 
         cn = self.file.read(4)
         cs = self.file.read(4)
@@ -68,7 +71,13 @@ class RIFFChunk(object):
 
         self.chunkname = cn
         self.chunksize = cs
-        self.chunk_pad = cs & 1
+        self.isunaligned = ''
+        if self.nopadding:
+            if (cs & 1) == 1:
+                self.isunaligned = 'UNALIGNED '
+            self.chunk_pad = 0
+        else:
+            self.chunk_pad = cs & 1
         self.container = ct
         self.children = []
         self.chunkfmt = cf
@@ -84,7 +93,7 @@ class RIFFChunk(object):
         if self.container is not None:
             while True:
                 try:
-                    child = RIFFChunk(self)
+                    child = RIFFChunk(self, self.nopadding)
                 except EOFError:
                     break
                 self.children.append(child)
@@ -93,6 +102,8 @@ class RIFFChunk(object):
 
     def __str__(self):
         s = '<RIFFChunk(%s)' % self.chunkfmt
+        if self.nopadding:
+            s += '{nopadding}'
         if self.container is not None:
             q = '['
             for child in self.children:
@@ -126,6 +137,8 @@ class RIFFChunk(object):
         return s
 
     def write(self, file):
+        if self.nopadding:
+            raise ValueError('RIFF files require padding')
         if not isinstance(self.chunkname, bytes):
             raise ValueError('Chunk name %s is not of type bytes' % self.chunkname)
         if len(self.chunkname) != 4:
@@ -172,6 +185,8 @@ class RIFFChunk(object):
             raise ValueError('Misaligned file after chunk %s' % self.chunkfmt)
 
     def set_length(self, newlen):
+        if self.nopadding:
+            raise ValueError('RIFF files require padding')
         old = self.chunksize + self.chunk_pad
         self.chunksize = newlen
         self.chunk_pad = self.chunksize & 1
@@ -180,6 +195,8 @@ class RIFFChunk(object):
             self.parent.adjust_length(new - old)
 
     def set_content(self, content, nul_pad=False):
+        if self.nopadding:
+            raise ValueError('RIFF files require padding')
         if self.container is not None:
             raise ValueError('Cannot set content of container type %s' % self.chunkfmt)
         if isinstance(content, str):
@@ -195,15 +212,16 @@ class RIFFChunk(object):
         self.set_length(self.chunksize + delta)
 
 class RIFFFile(RIFFChunk):
-    def __init__(self, file):
+    def __init__(self, file, nopadding=False):
         self.file = file
+        self.nopadding = nopadding
         self.container = True
         self.children = []
 
         child = None
         while True:
             try:
-                child = RIFFChunk(f)
+                child = RIFFChunk(f, self.nopadding)
             except EOFError:
                 break
             self.children.append(child)
@@ -215,6 +233,8 @@ class RIFFFile(RIFFChunk):
 
     def __str__(self):
         s = '<RIFFFile'
+        if self.nopadding:
+            s += '{nopadding}'
         q = '['
         for child in self.children:
             s += q + str(child)
@@ -225,6 +245,8 @@ class RIFFFile(RIFFChunk):
         return self.children[key]
 
     def write(self, file):
+        if self.nopadding:
+            raise ValueError('RIFF files require padding')
         for child in self.children:
             child.write(file)
 
@@ -234,9 +256,9 @@ def dumpriff(container, level=0, isinfo=False):
     for chunk in container.children:
         #print(indent + ' CHUNK %s of size %d, data at %d, next at %d' % (chunk.chunkfmt, chunk.chunksize, chunk.data_ofs, chunk.justpast))
         if isinfo:
-            print(indent + ' CHUNK %s(%d): %s' % (chunk.chunkfmt, chunk.chunksize, chunk.print()))
+            print(indent + ' %sCHUNK %s(%d): %s' % (chunk.isunaligned, chunk.chunkfmt, chunk.chunksize, chunk.print()))
         else:
-            print(indent + ' CHUNK %s of size %d' % (chunk.chunkfmt, chunk.chunksize))
+            print(indent + ' %sCHUNK %s of size %d' % (chunk.isunaligned, chunk.chunkfmt, chunk.chunksize))
         if chunk.container is not None:
             dumpriff(chunk, level+1, chunk.chunkfmt == b'LIST<INFO>')
     print(indent + 'END level=%d' % level)
@@ -273,7 +295,7 @@ if sys.argv[1] == '-i':
         f = sys.stdin.buffer
     else:
         f = open(sys.argv[2], 'rb')
-    riff = RIFFFile(f)
+    riff = RIFFFile(f, sys.argv[2].endswith('.sf3'))
     for chunk in riff[0][b'LIST<INFO>'].children:
         if chunk.chunkname not in (b'ifil', b'isng', b'IPRD', b'ISFT'):
             for x in (ident_encode(chunk.chunkname), b'\xFE',
@@ -284,7 +306,7 @@ if sys.argv[1] == '-i':
 print('START')
 if sys.argv[1] == '-d':
     with open(sys.argv[2], 'rb') as f:
-        riff = RIFFFile(f)
+        riff = RIFFFile(f, sys.argv[2].endswith('.sf3'))
         dumpriff(riff)
 else:
     with open(sys.argv[1], 'rb') as f, open(sys.argv[2], 'wb', buffering=65536) as dst:
