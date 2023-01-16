@@ -88,27 +88,34 @@
 	elts.bOk.className = "eb hidden";
 	elts.bNo.className = "eb hidden";
   }
+  function tstAJAX_cb(status, data, xhr) {
+	reslog("AJAX completed with code " + status + " " +
+	    xhr.statusText);
+	if (status !== 200)
+		return;
+	var x = xhr.responseXML;
+	var e = x.getElementsByTagName('p');
+	var i;
+	for (i = 0; i < e.length; ++i) {
+		if (e[i].getAttribute('class') === 'h')
+			reslog("acronym: " + e[i].textContent);
+		if (e[i].getAttribute('class') === 'e')
+			reslog("error: " + e[i].textContent);
+	}
+	e = x.getElementsByTagName('div');
+	for (i = 0; i < e.length; ++i)
+		reslog("result: " + e[i].textContent);
+	reslog("finished parsing the result");
+  }
   function tstAJAX() {
 	reslog("starting AJAX request");
-	ezXHR(function tstAJAX_cb(status, data, xhr) {
-		reslog("AJAX completed with code " + status + " " +
-		    xhr.statusText);
-		if (status !== 200)
-			return;
-		var x = xhr.responseXML;
-		var e = x.getElementsByTagName('p');
-		var i;
-		for (i = 0; i < e.length; ++i) {
-			if (e[i].getAttribute('class') === 'h')
-				reslog("acronym: " + e[i].textContent);
-			if (e[i].getAttribute('class') === 'e')
-				reslog("error: " + e[i].textContent);
-		}
-		e = x.getElementsByTagName('div');
-		for (i = 0; i < e.length; ++i)
-			reslog("result: " + e[i].textContent);
-		reslog("finished parsing the result");
-	    }, "http://www.mirbsd.org/raw.cgi?f=h&q=XHR",
+	ezXHR(tstAJAX_cb, "http://www.mirbsd.org/raw.cgi?f=h&q=XHR",
+	    undefined, "GET", "document");
+	reslog("sent AJAX request");
+  }
+  function locAJAX() {
+	reslog("starting local AJAX request to 'ajax.xml'");
+	ezXHR(tstAJAX_cb, "ajax.xml",
 	    undefined, "GET", "document");
 	reslog("sent AJAX request");
   }
@@ -193,8 +200,9 @@
  </tr>
 </table>
 <p>You can do an <button type="button" onclick="tstAJAX();">AJAX</button>
- request to the MirBSD acronyms database for XHR. The result will show
- below.</p>
+ request to the MirBSD acronyms database for XHR. The result will show below.
+ If cross-domain AJAX does not work, mirror the file as ajax.xml locally and
+ use <button type="button" onclick="locAJAX();">this button</button>.</p>
 <p>Here’s tests for the document.hash stuff:<br />
  <span class="nowrap">Key: <input id="ik" type="text" /></span>
  <span class="nowrap">Value: <input id="iv" type="text" /></span>
