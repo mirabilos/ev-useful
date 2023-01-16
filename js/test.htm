@@ -167,7 +167,8 @@
 		reslog(h);
 		reslog("keys: " + hashlib.keys().join(", "));
 	    });
-	elts.ts.innerText = new Date().toISOString();
+	var now = new Date();
+	elts.ts.innerText = now.toISOString ? now.toISOString() : now.toString();
 	elts.cv = 'initial comment';
   });
  //--><!]]></script>
