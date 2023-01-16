@@ -1,5 +1,5 @@
 /*-
- * Copyright © 2020, 2023
+ * Copyright © 2014, 2020, 2023
  *	mirabilos <m@mirbsd.org>
  *
  * Provided that these terms and disclaimer and all copyright notices
@@ -17,6 +17,34 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
+
+var usefulJS = (function _closure_usefulJS() {
+	var _hasOwnProperty = Object.prototype.hasOwnProperty;
+	var _toString = Object.prototype.toString;
+	var res = {
+		"hOP": _hasOwnProperty,
+		"toString": Object.prototype.toString
+	    };
+	res.isArray = function isArray(o) {
+		return (_toString.call(o) === "[object Array]");
+	    };
+	if (typeof(Array.isArray) === "function" &&
+	    Array.isArray([]) && !Array.isArray({}))
+		res.isArray = Array.isArray;
+	res.filter = Array.prototype.filter ? function filter(a, cb) {
+		return (a.filter(cb));
+	    } : function filter(a, cb) {
+		var res = [], i, v;
+		for (i = 0; i < a.length; ++i)
+			if (usefulJS.hOP.call(a, i)) {
+				v = a[i];
+				if (cb(v, i, a))
+					res.push(v);
+			}
+		return (res);
+	    };
+	return (res);
+    })();
 
 /**
  * Escape plaintext, such as from textarea.value, for HTML such as in
@@ -163,6 +191,158 @@ var deferDOM = (function _closure_deferDOM() {
     })();
 
 /**
+ * Usage:
+ *
+ * • hashlib(cb);
+ *   initialise hashlib if not yet done and, if cb is a function,
+ *   register it to be called on document hash change, cumulative
+ * • hashlib.get(key) → String|null|Array[String|null]|undefined
+ *   retrieve value of a document hash parameter; null = present
+ *   key without equals sign afterwards; undefined = absent key
+ * • hashlib.set(key, value);
+ *   set value of a hash parameter, stringified (use undefined to unset)
+ * • hashlib.clear();
+ *   remove all hash parameters
+ * • hashlib.keys() → Array[String]* sorted
+ *   list keys of currently set items
+ *
+ * Callbacks are called with the following parameters:
+ * – String newhash (unparsed, but may access .get)
+ * – bool set_initiated (true if called as result of calling .set/.clear
+ *   so callee may ignore this invocation wrt. internal state synching)
+ */
+var hashlib = (function _closure_hashlib() {
+	var initialised = false;
+	var set_initiated = false;
+	var callbacks = [];
+	var prevhash = "";
+	var checkhash = function checkhash() {
+		var newhash = String(document.location.href.split("#")[1] || "");
+		if (prevhash !== newhash) {
+			var ign = set_initiated;
+			prevhash = newhash;
+			set_initiated = false;
+			var i;
+			for (i = 0; i < callbacks.length; ++i)
+				callbacks[i](newhash, ign);
+		}
+	    };
+	var keys = [];
+	var values = {};
+	callbacks.push(function cbparse(h, ignorechange) {
+		if (ignorechange)
+			return;
+		keys = [];
+		values = {};
+		var pairs = h.split("&"), i, key, value, pair;
+		for (i = 0; i < pairs.length; ++i) {
+			pair = pairs[i].split("=");
+			key = decodeURIComponent(pair.shift());
+			value = pair.length < 1 ? null :
+			    decodeURIComponent(pair.length > 1 ?
+			    pair.join("=") : pair[0]);
+			if (usefulJS.hOP.call(values, key)) {
+				if (!usefulJS.isArray(values[key]))
+					values[key] = [values[key]];
+				values[key].push(value);
+			} else {
+				keys.push(key);
+				values[key] = value;
+			}
+		}
+	    });
+	var h2c = /%2C/ig;
+	var genhash = function genhash() {
+		var res = [], i, j, vals, key;
+		for (i = 0; i < keys.length; ++i) {
+			key = encodeURIComponent(keys[i]);
+			vals = values[keys[i]];
+			if (vals === null)
+				res.push(key);
+			else if (!usefulJS.isArray(vals))
+				res.push(key + "=" +
+				    encodeURIComponent(vals));
+			else for (j = 0; j < vals.length; ++j) {
+				if (vals[j] === null)
+					res.push(key);
+				else
+					res.push(key + "=" +
+					    encodeURIComponent(vals[j]));
+			}
+		}
+		return (res.join("&").replace(h2c, ","));
+	    };
+	var updhash = function updhash() {
+		var newhash = genhash();
+		if (newhash !== prevhash) {
+			set_initiated = true;
+			window.location.hash = newhash;
+		}
+	    };
+	var hl_get = function hashlib_get(key) {
+		key = String(key);
+		return (usefulJS.hOP.call(values, key) ?
+		    values[key] : undefined);
+	    };
+	var hl_set = function hashlib_set(key, value) {
+		key = String(key);
+		if (value === undefined) {
+			keys = usefulJS.filter(keys, function unsetter(v) {
+				return (v !== key);
+			    });
+			delete values[key];
+			updhash();
+			return;
+		}
+		if (!usefulJS.hOP.call(values, key))
+			keys.push(key);
+		if (value === null) {
+			values[key] = null;
+		} else if (!usefulJS.isArray(value)) {
+			values[key] = String(value);
+		} else {
+			var res = [], i;
+			for (i = 0; i < value.length; ++i)
+				if (usefulJS.hOP.call(value, i))
+					res.push(value[i] === null ?
+					    null : String(value[i]));
+			values[key] = res;
+		}
+		updhash();
+	    };
+	var hl_keys = function hashlib_keys() {
+		return (keys.slice(0).sort());
+	    };
+	var hl_clear = function hashlib_clear() {
+		keys = [];
+		values = {};
+		updhash();
+	    };
+	var hl_initialise = function hl_initialise(hl) {
+		initialised = true;
+		if (typeof(window.onhashchange) !== "undefined" &&
+		    (document.documentMode === undefined || document.documentMode > 7))
+			window.onhashchange = checkhash;
+		else
+			window.setInterval(checkhash, 100);
+		checkhash(); // will only call cbparse
+		hl.get = hl_get;
+		hl.set = hl_set;
+		hl.keys = hl_keys;
+		hl.clear = hl_clear;
+	    };
+	var hl = function hashlib(cb) {
+		if (!initialised)
+			hl_initialise(hl);
+		if (typeof(cb) === "function")
+			callbacks.push(cb);
+	    };
+	// ONLY for debugging!
+	//hl.getValues = function hl_getv() { return (values); };
+	return (hl);
+    })();
+
+/**
  * Easy XMLHttpRequest (“AJAX”). Callback is run upon completion,
  * whether success or failure, with the status code, data and the
  * request/response object. Doing JSON.parse(responseText) maybe.
@@ -172,7 +352,7 @@ function ezXHR(cb, url, data, method, rt) {
 		method = data === undefined ? "GET" : "POST";
 	var xhr = new XMLHttpRequest();
 	var responseTextAvailable = rt === undefined ||
-	    rt === '' || rt === 'text';
+	    rt === "" || rt === "text";
 	xhr.onreadystatechange = function ezXHR_event() {
 		if (xhr.readyState === 4)
 			cb(xhr.status, responseTextAvailable ?

@@ -112,6 +112,43 @@
 	    undefined, "GET", "document");
 	reslog("sent AJAX request");
   }
+  function btnGet() {
+	var k = elts.ik.value;
+	reslog("pressed btnGet (" + k + ")");
+	var v = hashlib.get(k);
+	if (v === undefined) {
+		reslog("key not found");
+		v = "";
+	} else if (v === null) {
+		reslog("no value found");
+		v = "";
+	} else if (usefulJS.isArray(v)) {
+		var i, e;
+		for (i = 0; i < v.length; ++i)
+			htmlog("<b>#" + i + ":</b> " +
+			    text2html(xhtsafe(v[i])));
+	} else
+		htmlog(text2html(xhtsafe(v)));
+	elts.iv.value = xhtsafe(v);
+  };
+  function btnSet() {
+	var k = elts.ik.value;
+	var v = elts.iv.value;
+	reslog("pressed btnSet (" + k + ") ← (" + v + ")");
+	hashlib.set(k, v);
+  }
+  function btnUnset() {
+	var k = elts.ik.value;
+	elts.iv.value = "";
+	reslog("pressed btnUnset (" + k + ")");
+	hashlib.set(k);
+  }
+  function btnClear() {
+	reslog("pressed btnClear");
+	elts.ik.value = "";
+	elts.iv.value = "";
+	hashlib.clear();
+  }
   deferDOM(function onDOMReady() {
 	elts.ts = document.getElementById('ts');
 	elts.tbl = document.getElementById('tbl');
@@ -121,8 +158,15 @@
 	elts.bEd = document.getElementById('bEd');
 	elts.bOk = document.getElementById('bOk');
 	elts.bNo = document.getElementById('bNo');
+	elts.ik = document.getElementById('ik');
+	elts.iv = document.getElementById('iv');
 	reslog("DOM is ready");
 
+	hashlib(function hlcb(h, i) {
+		reslog("↑ new hash, ignore=" + (i ? "yes" : "no"));
+		reslog(h);
+		reslog("keys: " + hashlib.keys().join(", "));
+	    });
 	elts.ts.innerText = new Date().toISOString();
 	elts.cv = 'initial comment';
   });
@@ -149,7 +193,15 @@
 </table>
 <p>You can do an <button type="button" onclick="tstAJAX();">AJAX</button>
  request to the MirBSD acronyms database for XHR. The result will show
- below:</p>
+ below.</p>
+<p>Here’s tests for the document.hash stuff:<br />
+ <span class="nowrap">Key: <input id="ik" type="text" /></span>
+ <span class="nowrap">Value: <input id="iv" type="text" /></span>
+ <button type="button" onclick="btnGet();">Get</button>
+ <button type="button" onclick="btnSet();">Set</button>
+ <button type="button" onclick="btnUnset();">Unset</button>
+ <button type="button" onclick="btnClear();">Clear</button>
+</p>
 <ul id="dynres">
  <li><i>(nothing yet…)</i></li>
 </ul>
