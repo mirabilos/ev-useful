@@ -43,6 +43,63 @@ var usefulJS = (function _closure_usefulJS() {
 			}
 		return (res);
 	    };
+	var zpad = function zeropad(number, len, fractional) {
+		var res = Number(number).toFixed(fractional ? fractional : 0);
+		while (res.length < len)
+			res = "0" + res;
+		return (res);
+	    };
+	res.zeropad = zpad;
+	var makeDateObject = function makeDateObject() {
+		var a = arguments;
+		switch (a.length) {
+		case 0: return (new Date());
+		case 1: return (new Date(a[0]));
+		case 2: return (new Date(a[0], a[1]));
+		case 3: return (new Date(a[0], a[1], a[2]));
+		case 4: return (new Date(a[0], a[1], a[2], a[3]));
+		case 5: return (new Date(a[0], a[1], a[2], a[3], a[4]));
+		case 6: return (new Date(a[0], a[1], a[2], a[3], a[4], a[5]));
+		default: return (new Date(a[0], a[1], a[2], a[3], a[4], a[5], a[6]));
+		}
+	    };
+	res.ISO8601 = function ISO8601(dateobject) {
+		/* could be called like Date constructor */
+		var d = (_toString.call(dateobject) === "[object Date]" &&
+		    !isNaN(dateobject)) ? dateobject :
+		    makeDateObject.apply(null, arguments);
+		var Y = d.getFullYear(),
+		    M = d.getMonth(),
+		    D = d.getDate(),
+		    h = d.getHours(),
+		    m = d.getMinutes(),
+		    s = d.getSeconds(),
+		    S = d.getMilliseconds(),
+		    o = d.getTimezoneOffset(),
+		    r, oh, om;
+		if (o == 0)
+			r = "Z";
+		else {
+			if (o < 0) {
+				r = "+";
+				o = -o;
+			} else
+				r = "-";
+			om = o % 60;
+			oh = (o - om) / 60;
+			r += zpad(oh, 2) + ":" + zpad(om, 2);
+		}
+		r = "-" + zpad(M, 2) + "-" + zpad(D, 2) + "T" +
+		    zpad(h, 2) + ":" + zpad(m, 2) + ":" + zpad(s, 2) +
+		    "." + zpad(S, 3) + r;
+		if (Y < 0)
+			r = "-" + zpad(-Y, 4) + r;
+		else if (Y > 9999)
+			r = "+" + zpad(Y, 5) + r;
+		else
+			r = zpad(Y, 4) + r;
+		return (r);
+	    };
 	return (res);
     })();
 
