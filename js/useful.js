@@ -167,15 +167,20 @@ var deferDOM = (function _closure_deferDOM() {
  * whether success or failure, with the status code, data and the
  * request/response object. Doing JSON.parse(responseText) maybe.
  */
-function ezXHR(cb, url, data, method) {
+function ezXHR(cb, url, data, method, rt) {
 	if (!method)
 		method = data === undefined ? "GET" : "POST";
 	var xhr = new XMLHttpRequest();
+	var responseTextAvailable = rt === undefined ||
+	    rt === '' || rt === 'text';
 	xhr.onreadystatechange = function ezXHR_event() {
 		if (xhr.readyState === 4)
-			cb(xhr.status, xhr.responseText, xhr);
+			cb(xhr.status, responseTextAvailable ?
+			    xhr.responseText : undefined, xhr);
 	    };
 	xhr.open(method, url, true);
+	if (rt !== undefined)
+		xhr.responseType = rt;
 	xhr.send(data);
 	return (xhr);
 }

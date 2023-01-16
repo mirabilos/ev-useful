@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ <meta http-equiv="Content-Style-Type" content="text/css" />
+ <meta name="MSSmartTagsPreventParsing" content="TRUE" />
+ <title>useful.js test page</title>
+ <meta name="robots" content="noindex, follow" />
+ <style type="text/css"><!--/*--><![CDATA[/*><!--*/
+  button {
+	appearance:none;
+  }
+
+  .blk {
+	display:block;
+  }
+  .hidden {
+	display:none;
+  }
+
+  .red {
+	background-color:red;
+  }
+  .green {
+	background-color:green;
+  }
+
+  #tbl {
+	width:100%;
+	table-layout:auto;
+	border-spacing:0.5em;
+  }
+  #tbl th {
+	text-align:left;
+  }
+  #tbl td {
+	vertical-align:top;
+  }
+  #tbl textarea {
+	width:100%;
+	overflow:auto;
+	resize:vertical;
+  }
+
+  button.eb {
+	width:2.5em;
+  }
+ /*]]>*/--></style>
+ <script type="text/javascript" src="useful.js"></script>
+ <script type="text/javascript"><!--//--><![CDATA[//><!--
+  var elts = {};
+  function reslog(s) {
+	var e = document.createElement('li');
+	e.innerText = String(s);
+	elts.res.insertBefore(e, elts.res.firstChild);
+  }
+  function htmlog(s) {
+	var e = document.createElement('li');
+	e.innerHTML = String(s);
+	elts.res.insertBefore(e, elts.res.firstChild);
+  }
+  function btnEd() {
+	reslog("pressed Edit button");
+	elts.txt.className = "hidden";
+	elts.edt.className = "";
+	elts.bEd.className = "eb hidden";
+	elts.bOk.className = "eb blk";
+	elts.bNo.className = "eb blk";
+  }
+  function btnOk() {
+	reslog("pressed OK button");
+	htmlog(text2html(xhtsafe(elts.edt.value)));
+	elts.cv = xhtsafe(elts.edt.value);
+	elts.edt.value = elts.cv;
+	elts.txt.innerHTML = text2html(elts.cv);
+	elts.txt.className = "";
+	elts.edt.className = "hidden";
+	elts.bEd.className = "eb blk green";
+	elts.bOk.className = "eb hidden";
+	elts.bNo.className = "eb hidden";
+  }
+  function btnNo() {
+	reslog("pressed NO button");
+	elts.edt.value = elts.cv;
+	elts.txt.className = "";
+	elts.edt.className = "hidden";
+	elts.bEd.className = "eb blk";
+	elts.bOk.className = "eb hidden";
+	elts.bNo.className = "eb hidden";
+  }
+  function tstAJAX() {
+	reslog("starting AJAX request");
+	ezXHR(function tstAJAX_cb(status, data, xhr) {
+		reslog("AJAX completed with code " + status + " " +
+		    xhr.statusText);
+		if (status !== 200)
+			return;
+		var x = xhr.responseXML;
+		var e = x.getElementsByTagName('p');
+		var i;
+		for (i = 0; i < e.length; ++i) {
+			if (e[i].getAttribute('class') === 'h')
+				reslog("acronym: " + e[i].textContent);
+			if (e[i].getAttribute('class') === 'e')
+				reslog("error: " + e[i].textContent);
+		}
+		e = x.getElementsByTagName('div');
+		for (i = 0; i < e.length; ++i)
+			reslog("result: " + e[i].textContent);
+		reslog("finished parsing the result");
+	    }, "http://www.mirbsd.org/raw.cgi?f=h&q=XHR",
+	    undefined, "GET", "document");
+	reslog("sent AJAX request");
+  }
+  deferDOM(function onDOMReady() {
+	elts.ts = document.getElementById('ts');
+	elts.tbl = document.getElementById('tbl');
+	elts.txt = document.getElementById('tbltxt');
+	elts.edt = document.getElementById('tbledt');
+	elts.res = document.getElementById('dynres');
+	elts.bEd = document.getElementById('bEd');
+	elts.bOk = document.getElementById('bOk');
+	elts.bNo = document.getElementById('bNo');
+	reslog("DOM is ready");
+
+	elts.ts.innerText = new Date().toISOString();
+	elts.cv = 'initial comment';
+  });
+ //--><!]]></script>
+</head><body>
+<h1>test page for <tt>useful.js</tt></h1>
+<p>on DOMReady, the following is set to the current time:
+ <tt id="ts">-</tt></p>
+<p>This table has an editable-ish text field:</p>
+<table id="tbl" border="0">
+ <tr>
+  <th style="width:1em;">ID</th>
+  <th>comment</th>
+  <th style="width:1px;"></th>
+ </tr><tr>
+  <td>1</td>
+  <td><span id="tbltxt">initial comment</span><textarea class="hidden"
+   id="tbledt">initial comment</textarea></td>
+  <td><button
+   type="button" id="bEd" class="eb blk" onclick="btnEd();">🖉</button><button
+   type="button" id="bOk" class="eb hidden" onclick="btnOk();">✔</button><button
+   type="button" id="bNo" class="eb hidden" onclick="btnNo();">✘</button></td>
+ </tr>
+</table>
+<p>You can do an <button type="button" onclick="tstAJAX();">AJAX</button>
+ request to the MirBSD acronyms database for XHR. The result will show
+ below:</p>
+<ul id="dynres">
+ <li><i>(nothing yet…)</i></li>
+</ul>
+<hr />
+<p style="font-size:small;">This is <a
+ href="https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=useful-scripts/useful-scripts.git;a=tree;f=js;hb=HEAD"
+ title="Evolvis gitweb">useful-scripts/js</a> under Ⓕ MirBSD by
+ © mirabilos; the test page especially was contributed by ⮡ tarent
+ as well as Deutsche Telekom LLCTO.</p>
+</body></html>
