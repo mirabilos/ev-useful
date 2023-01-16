@@ -18,6 +18,17 @@
  * of said person’s immediate fault when using the work as intended.
  */
 
+/**
+ * Usage:
+ *
+ * usefulJS.hOP = Object.prototype.hasOwnProperty
+ * usefulJS.toString = Object.prototype.toString
+ * usefulJS.isArray = Array.isArray or polyfill
+ * usefulJS.filter(array, callback): array.filter(callback) or polyfill
+ * usefulJS.zpad(n, l, f=0): sprintf("%0*s", l, n.toFixed(f))
+ * usefulJS.ISO8601(dateobject): dateobject.toISOString() timezone-aware
+ *     (arguments can also be these of the Date constructor)
+ */
 var usefulJS = (function _closure_usefulJS() {
 	var _hasOwnProperty = Object.prototype.hasOwnProperty;
 	var _toString = Object.prototype.toString;
