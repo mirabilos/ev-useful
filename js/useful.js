@@ -88,7 +88,7 @@ var usefulJS = (function _closure_usefulJS() {
 		    S = d.getMilliseconds(),
 		    o = d.getTimezoneOffset(),
 		    r, oh, om;
-		if (o == 0)
+		if (!o)
 			r = "Z";
 		else {
 			if (o < 0) {
