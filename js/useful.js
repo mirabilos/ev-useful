@@ -80,7 +80,7 @@ var usefulJS = (function _closure_usefulJS() {
 		    !isNaN(dateobject)) ? dateobject :
 		    makeDateObject.apply(null, arguments);
 		var Y = d.getFullYear(),
-		    M = d.getMonth(),
+		    M = d.getMonth() + 1,
 		    D = d.getDate(),
 		    h = d.getHours(),
 		    m = d.getMinutes(),
