@@ -432,3 +432,5 @@ function ezXHR(cb, url, data, method, rt) {
 	xhr.send(data);
 	return (xhr);
 }
+
+/* canonical: <https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=useful-scripts/useful-scripts.git;a=tree;f=js;hb=HEAD> */
