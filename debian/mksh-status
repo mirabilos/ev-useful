@@ -159,7 +159,7 @@ while (( ++i < narchs )); do
 	}
 	cat >>columnus <<-EOF
 		${archs[i]})mksh)${vvsystem:-⁉ unset})${vvmksh_klibc:-⁉ unset})${vvmksh_musl:-⁉ unset})${vvmksh_dietlibc:-⁉ unset})${vvmksh_glibc:-⁉ unset}
-		${vvarch:- })lksh) $bred version$vsn)${vvlksh_klibc:-⁉ unset})${vvlksh_musl:-⁉ unset})${vvlksh_dietlibc:-⁉ unset})${vvlksh_glibc:-⁉ unset}
+		${vvarch:+}${vvarch:- })lksh) $bred version$vsn)${vvlksh_klibc:-⁉ unset})${vvlksh_musl:-⁉ unset})${vvlksh_dietlibc:-⁉ unset})${vvlksh_glibc:-⁉ unset}
 	EOF
 done
 
