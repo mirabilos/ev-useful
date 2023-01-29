@@ -46,6 +46,8 @@ var _needsdom = function _unavailable_outside_browser() {
  * usefulJS.zpad(n, l, f=0): sprintf("%0*s", l, n.toFixed(f))
  * usefulJS.ISO8601(dateobject): dateobject.toISOString() timezone-aware
  *     (arguments can also be these of the Date constructor)
+ * usefulJS.date2mjd(dateobject) → [mjd, seconds]
+ * usefulJS.mjd2date(mjd, seconds): Modified Julian Date to js Date object
  */
 G.hOP = _hasOwnProperty;
 G.toString = Object.prototype.toString;
@@ -125,6 +127,25 @@ G.ISO8601 = function ISO8601(dateobject) {
 	else
 		r = _zpad(Y, 4) + r;
 	return (r);
+    };
+
+G.date2mjd = function date2mjd(dateobject) {
+	/* could be called like Date constructor */
+	var d = _getDateObject.apply(null, arguments);
+	var s = d.valueOf() / 1000;
+	var sec = s % 86400;
+	var mjd = (s - sec) / 86400 + 40587;
+	sec = Number(sec.toFixed(3));
+	while (sec < 0) {
+		--mjd;
+		sec += 86400;
+	}
+	return ([mjd, sec]);
+    };
+
+G.mjd2date = function mjd2date(mjd, sec) {
+	var s = (mjd - 40587) * 86400 + sec;
+	return (new Date(s));
     };
 
 /**

@@ -6,6 +6,9 @@
  <meta name="MSSmartTagsPreventParsing" content="TRUE" />
  <title>useful.js test page</title>
  <meta name="robots" content="noindex, follow" />
+ <!-- might need this:
+      $ wget -O ajax.xml 'http://www.mirbsd.org/raw.cgi?f=h&q=XHR'
+ -->
  <style type="text/css"><!--/*--><![CDATA[/*><!--*/
   button {
 	appearance:none;
@@ -158,6 +161,7 @@
   }
   usefulJS.deferDOM(function onDOMReady() {
 	elts.ts = document.getElementById('ts');
+	elts.mjd = document.getElementById('mjd');
 	elts.tbl = document.getElementById('tbl');
 	elts.txt = document.getElementById('tbltxt');
 	elts.edt = document.getElementById('tbledt');
@@ -174,14 +178,16 @@
 		reslog(h);
 		reslog("keys: " + usefulJS.hashlib.keys().join(", "));
 	    });
-	elts.ts.innerText = usefulJS.ISO8601();
+	var now = new Date();
+	elts.ts.innerText = usefulJS.ISO8601(now);
+	elts.mjd.innerText = usefulJS.date2mjd(now).join("z");
 	elts.cv = 'initial comment';
   });
  //--><!]]></script>
 </head><body>
 <h1>test page for <tt>useful.js</tt></h1>
 <p>on DOMReady, the following is set to the current time:
- <tt id="ts">-</tt></p>
+ <tt id="ts">-</tt> or (as MJD) <tt id="mjd">-</tt></p>
 <p>This table has an editable-ish text field:</p>
 <table id="tbl" border="0">
  <tr>
