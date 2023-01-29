@@ -330,6 +330,8 @@ G.hashlib = (function _closure_hashlib() {
 			var ign = set_initiated;
 			prevhash = newhash;
 			set_initiated = false;
+			if (newhash === "%20" || newhash === " ")
+				newhash = "";
 			var i;
 			for (i = 0; i < callbacks.length; ++i)
 				callbacks[i](newhash, ign);
@@ -382,6 +384,8 @@ G.hashlib = (function _closure_hashlib() {
 	    };
 	var updhash = function updhash() {
 		var newhash = genhash();
+		if (!newhash.length)
+			newhash = " ";
 		if (newhash !== prevhash) {
 			set_initiated = true;
 			window.location.hash = newhash;
