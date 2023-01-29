@@ -19,6 +19,23 @@
  */
 "use strict";
 
+/* make this work with nodejs and in browsers */
+(function _closure_usefulJS(G) {
+
+var _hasOwnProperty = Object.prototype.hasOwnProperty;
+var _toString = Object.prototype.toString;
+
+var _isArray = function isArray(o) {
+	return (_toString.call(o) === "[object Array]");
+    };
+if (typeof(Array.isArray) === "function" &&
+    Array.isArray([]) && !Array.isArray({}))
+	_isArray = Array.isArray;
+
+var _needsdom = function _unavailable_outside_browser() {
+	throw "unavailable without document object";
+    };
+
 /**
  * Usage:
  *
@@ -30,97 +47,92 @@
  * usefulJS.ISO8601(dateobject): dateobject.toISOString() timezone-aware
  *     (arguments can also be these of the Date constructor)
  */
-var usefulJS = (function _closure_usefulJS() {
-	var _hasOwnProperty = Object.prototype.hasOwnProperty;
-	var _toString = Object.prototype.toString;
-	var res = {
-		"hOP": _hasOwnProperty,
-		"toString": Object.prototype.toString
-	    };
-	res.isArray = function isArray(o) {
-		return (_toString.call(o) === "[object Array]");
-	    };
-	if (typeof(Array.isArray) === "function" &&
-	    Array.isArray([]) && !Array.isArray({}))
-		res.isArray = Array.isArray;
-	res.filter = Array.prototype.filter ? function filter(a, cb) {
-		return (a.filter(cb));
-	    } : function filter(a, cb) {
-		var res = [], i, v;
-		for (i = 0; i < a.length; ++i)
-			if (usefulJS.hOP.call(a, i)) {
-				v = a[i];
-				if (cb(v, i, a))
-					res.push(v);
-			}
-		return (res);
-	    };
-	var zpad = function zeropad(number, len, fractional) {
-		var res = Number(number).toFixed(fractional ? fractional : 0);
-		while (res.length < len)
-			res = "0" + res;
-		return (res);
-	    };
-	res.zeropad = zpad;
-	var makeDateObject = function makeDateObject() {
-		var a = arguments;
-		switch (a.length) {
-		case 0: return (new Date());
-		case 1: return (new Date(a[0]));
-		case 2: return (new Date(a[0], a[1]));
-		case 3: return (new Date(a[0], a[1], a[2]));
-		case 4: return (new Date(a[0], a[1], a[2], a[3]));
-		case 5: return (new Date(a[0], a[1], a[2], a[3], a[4]));
-		case 6: return (new Date(a[0], a[1], a[2], a[3], a[4], a[5]));
-		default: return (new Date(a[0], a[1], a[2], a[3], a[4], a[5], a[6]));
+G.hOP = _hasOwnProperty;
+G.toString = Object.prototype.toString;
+G.isArray = _isArray;
+G.filter = Array.prototype.filter ? function filter(a, cb) {
+	return (a.filter(cb));
+    } : function filter(a, cb) {
+	var res = [], i, v;
+	for (i = 0; i < a.length; ++i)
+		if (usefulJS.hOP.call(a, i)) {
+			v = a[i];
+			if (cb(v, i, a))
+				res.push(v);
 		}
-	    };
-	res.ISO8601 = function ISO8601(dateobject) {
-		/* could be called like Date constructor */
-		var d = (_toString.call(dateobject) === "[object Date]" &&
-		    !isNaN(dateobject)) ? dateobject :
-		    makeDateObject.apply(null, arguments);
-		var Y = d.getFullYear(),
-		    M = d.getMonth() + 1,
-		    D = d.getDate(),
-		    h = d.getHours(),
-		    m = d.getMinutes(),
-		    s = d.getSeconds(),
-		    S = d.getMilliseconds(),
-		    o = d.getTimezoneOffset(),
-		    r, oh, om;
-		if (!o)
-			r = "Z";
-		else {
-			if (o < 0) {
-				r = "+";
-				o = -o;
-			} else
-				r = "-";
-			om = o % 60;
-			oh = (o - om) / 60;
-			r += zpad(oh, 2) + ":" + zpad(om, 2);
-		}
-		r = "-" + zpad(M, 2) + "-" + zpad(D, 2) + "T" +
-		    zpad(h, 2) + ":" + zpad(m, 2) + ":" + zpad(s, 2) +
-		    "." + zpad(S, 3) + r;
-		if (Y < 0)
-			r = "-" + zpad(-Y, 4) + r;
-		else if (Y > 9999)
-			r = "+" + zpad(Y, 5) + r;
-		else
-			r = zpad(Y, 4) + r;
-		return (r);
-	    };
 	return (res);
-    })();
+    };
+
+var _zpad = function zeropad(number, len, fractional) {
+	var res = Number(number).toFixed(fractional ? fractional : 0);
+	while (res.length < len)
+		res = "0" + res;
+	return (res);
+    };
+G.zeropad = _zpad;
+
+// helper, not exported
+var _makeDateObject = function _makeDateObject() {
+	var a = arguments;
+	switch (a.length) {
+	case 0: return (new Date());
+	case 1: return (new Date(a[0]));
+	case 2: return (new Date(a[0], a[1]));
+	case 3: return (new Date(a[0], a[1], a[2]));
+	case 4: return (new Date(a[0], a[1], a[2], a[3]));
+	case 5: return (new Date(a[0], a[1], a[2], a[3], a[4]));
+	case 6: return (new Date(a[0], a[1], a[2], a[3], a[4], a[5]));
+	default: return (new Date(a[0], a[1], a[2], a[3], a[4], a[5], a[6]));
+	}
+    };
+var _getDateObject = function _getDateObject(a1) {
+	if (_toString.call(a1) === "[object Date]" && !isNaN(a1))
+		return (a1);
+	return (_makeDateObject.apply(null, arguments));
+    };
+
+G.ISO8601 = function ISO8601(dateobject) {
+	/* could be called like Date constructor */
+	var d = _getDateObject.apply(null, arguments);
+	var Y = d.getFullYear(),
+	    M = d.getMonth() + 1,
+	    D = d.getDate(),
+	    h = d.getHours(),
+	    m = d.getMinutes(),
+	    s = d.getSeconds(),
+	    S = d.getMilliseconds(),
+	    o = d.getTimezoneOffset(),
+	    r, oh, om;
+	if (!o)
+		r = "Z";
+	else {
+		if (o < 0) {
+			r = "+";
+			o = -o;
+		} else
+			r = "-";
+		om = o % 60;
+		oh = (o - om) / 60;
+		r += _zpad(oh, 2) + ":" + _zpad(om, 2);
+	}
+	r = "-" + _zpad(M, 2) + "-" + _zpad(D, 2) + "T" +
+	    _zpad(h, 2) + ":" + _zpad(m, 2) + ":" + _zpad(s, 2) +
+	    "." + _zpad(S, 3) + r;
+	if (Y < 0)
+		r = "-" + _zpad(-Y, 4) + r;
+	else if (Y > 9999)
+		r = "+" + _zpad(Y, 5) + r;
+	else
+		r = _zpad(Y, 4) + r;
+	return (r);
+    };
 
 /**
  * Escape plaintext, such as from textarea.value, for HTML such as in
  * span.innerHTML: entities for amp, lt, gt and (numeric) the double,
  * but not⚠ single, quote; "<br />" for newlines.
  */
-var text2html = (function _closure_text2html() {
+G.text2html = (function _closure_text2html() {
 	var ra = /&/g;
 	var rl = /</g;
 	var rg = />/g;
@@ -144,7 +156,7 @@ var text2html = (function _closure_text2html() {
  * C0 control characters except Tab, CR, LF; C1 control characters;
  * DEL; surrogates; noncharacters (U+FFFE‥U+FFFF and others).
  */
-var xhtsafe = (function _closure_xhtsafe() {
+G.xhtsafe = (function _closure_xhtsafe() {
 	var re = /((?:[\t\n\r -~\xA0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD]|[\uD800-\uD83E\uD840-\uD87E\uD880-\uD8BE\uD8C0-\uD8FE\uD900-\uD93E\uD940-\uD97E\uD980-\uD9BE\uD9C0-\uD9FE\uDA00-\uDA3E\uDA40-\uDA7E\uDA80-\uDABE\uDAC0-\uDAFE\uDB00-\uDB3E\uDB40-\uDB7E\uDB80-\uDBBE\uDBC0-\uDBFE][\uDC00-\uDFFF]|[\uD83F\uD87F\uD8BF\uD8FF\uD93F\uD97F\uD9BF\uD9FF\uDA3F\uDA7F\uDABF\uDAFF\uDB3F\uDB7F\uDBBF\uDBFF][\uDC00-\uDFFD])+)/;
 	var rs = /[\x0C\x85]/g;
 
@@ -172,7 +184,10 @@ var xhtsafe = (function _closure_xhtsafe() {
  *
  * Both return true if the DOM is ready, false otherwise.
  */
-var deferDOM = (function _closure_deferDOM() {
+G.deferDOM = (function _closure_deferDOM() {
+	if (typeof(document) === "undefined")
+		return (_needsdom);
+
 	var called = false;
 	var tmo = false;
 	var callbackfns = [];
@@ -280,7 +295,10 @@ var deferDOM = (function _closure_deferDOM() {
  * – bool set_initiated (true if called as result of calling .set/.clear
  *   so callee may ignore this invocation wrt. internal state synching)
  */
-var hashlib = (function _closure_hashlib() {
+G.hashlib = (function _closure_hashlib() {
+	if (typeof(document) === "undefined")
+		return (_needsdom);
+
 	var initialised = false;
 	var set_initiated = false;
 	var callbacks = [];
@@ -311,7 +329,7 @@ var hashlib = (function _closure_hashlib() {
 			    decodeURIComponent(pair.length > 1 ?
 			    pair.join("=") : pair[0]);
 			if (usefulJS.hOP.call(values, key)) {
-				if (!usefulJS.isArray(values[key]))
+				if (!_isArray(values[key]))
 					values[key] = [values[key]];
 				values[key].push(value);
 			} else {
@@ -328,7 +346,7 @@ var hashlib = (function _closure_hashlib() {
 			vals = values[keys[i]];
 			if (vals === null)
 				res.push(key);
-			else if (!usefulJS.isArray(vals))
+			else if (!_isArray(vals))
 				res.push(key + "=" +
 				    encodeURIComponent(vals));
 			else for (j = 0; j < vals.length; ++j) {
@@ -367,7 +385,7 @@ var hashlib = (function _closure_hashlib() {
 			keys.push(key);
 		if (value === null) {
 			values[key] = null;
-		} else if (!usefulJS.isArray(value)) {
+		} else if (!_isArray(value)) {
 			values[key] = String(value);
 		} else {
 			var res = [], i;
@@ -416,7 +434,7 @@ var hashlib = (function _closure_hashlib() {
  * whether success or failure, with the status code, data and the
  * request/response object. Doing JSON.parse(responseText) maybe.
  */
-function ezXHR(cb, url, data, method, rt) {
+G.ezXHR = function ezXHR(cb, url, data, method, rt) {
 	if (!method)
 		method = data === undefined ? "GET" : "POST";
 	var xhr = new XMLHttpRequest();
@@ -432,6 +450,9 @@ function ezXHR(cb, url, data, method, rt) {
 		xhr.responseType = rt;
 	xhr.send(data);
 	return (xhr);
-}
+    };
+
+/* </_closure_usefulJS> */
+})(typeof(exports) === "undefined" ? (this["usefulJS"] = {}) : exports);
 
 /* canonical: <https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=useful-scripts/useful-scripts.git;a=tree;f=js;hb=HEAD> */

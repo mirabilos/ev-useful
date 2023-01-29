@@ -69,10 +69,10 @@
   }
   function btnOk() {
 	reslog("pressed OK button");
-	htmlog(text2html(xhtsafe(elts.edt.value)));
-	elts.cv = xhtsafe(elts.edt.value);
+	htmlog(usefulJS.text2html(usefulJS.xhtsafe(elts.edt.value)));
+	elts.cv = usefulJS.xhtsafe(elts.edt.value);
 	elts.edt.value = elts.cv;
-	elts.txt.innerHTML = text2html(elts.cv);
+	elts.txt.innerHTML = usefulJS.text2html(elts.cv);
 	elts.txt.className = "";
 	elts.edt.className = "hidden";
 	elts.bEd.className = "eb blk green";
@@ -109,20 +109,20 @@
   }
   function tstAJAX() {
 	reslog("starting AJAX request");
-	ezXHR(tstAJAX_cb, "http://www.mirbsd.org/raw.cgi?f=h&q=XHR",
+	usefulJS.ezXHR(tstAJAX_cb, "http://www.mirbsd.org/raw.cgi?f=h&q=XHR",
 	    undefined, "GET", "document");
 	reslog("sent AJAX request");
   }
   function locAJAX() {
 	reslog("starting local AJAX request to 'ajax.xml'");
-	ezXHR(tstAJAX_cb, "ajax.xml",
+	usefulJS.ezXHR(tstAJAX_cb, "ajax.xml",
 	    undefined, "GET", "document");
 	reslog("sent AJAX request");
   }
   function btnGet() {
 	var k = elts.ik.value;
 	reslog("pressed btnGet (" + k + ")");
-	var v = hashlib.get(k);
+	var v = usefulJS.hashlib.get(k);
 	if (v === undefined) {
 		reslog("key not found");
 		v = "";
@@ -133,30 +133,30 @@
 		var i, e;
 		for (i = 0; i < v.length; ++i)
 			htmlog("<b>#" + i + ":</b> " +
-			    text2html(xhtsafe(v[i])));
+			    usefulJS.text2html(usefulJS.xhtsafe(v[i])));
 	} else
-		htmlog(text2html(xhtsafe(v)));
-	elts.iv.value = xhtsafe(v);
+		htmlog(usefulJS.text2html(usefulJS.xhtsafe(v)));
+	elts.iv.value = usefulJS.xhtsafe(v);
   };
   function btnSet() {
 	var k = elts.ik.value;
 	var v = elts.iv.value;
 	reslog("pressed btnSet (" + k + ") ← (" + v + ")");
-	hashlib.set(k, v);
+	usefulJS.hashlib.set(k, v);
   }
   function btnUnset() {
 	var k = elts.ik.value;
 	elts.iv.value = "";
 	reslog("pressed btnUnset (" + k + ")");
-	hashlib.set(k);
+	usefulJS.hashlib.set(k);
   }
   function btnClear() {
 	reslog("pressed btnClear");
 	elts.ik.value = "";
 	elts.iv.value = "";
-	hashlib.clear();
+	usefulJS.hashlib.clear();
   }
-  deferDOM(function onDOMReady() {
+  usefulJS.deferDOM(function onDOMReady() {
 	elts.ts = document.getElementById('ts');
 	elts.tbl = document.getElementById('tbl');
 	elts.txt = document.getElementById('tbltxt');
@@ -169,10 +169,10 @@
 	elts.iv = document.getElementById('iv');
 	reslog("DOM is ready");
 
-	hashlib(function hlcb(h, i) {
+	usefulJS.hashlib(function hlcb(h, i) {
 		reslog("↑ new hash, ignore=" + (i ? "yes" : "no"));
 		reslog(h);
-		reslog("keys: " + hashlib.keys().join(", "));
+		reslog("keys: " + usefulJS.hashlib.keys().join(", "));
 	    });
 	elts.ts.innerText = usefulJS.ISO8601();
 	elts.cv = 'initial comment';
