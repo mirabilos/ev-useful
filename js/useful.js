@@ -139,17 +139,17 @@ var text2html = (function _closure_text2html() {
 
 /**
  * Make a string XML/HTML/XHTML/tty-safe: substitute codepoints not
- * permitted by XML/HTML and control characters (other than newline
- * and Tab) with U+FFFD (most C0 controls and DEL, C1 controls save
- * NEL, loose surrogates, U+FFFE‥U+FFFF) but U-00010000‥U-0010FFFF,
- * and the other noncharacters, are permitted.
+ * permitted by XML/HTML: CRLF for NEL and FF, U+FFFD for the rest:
+ * C0 control characters except Tab, CR, LF; C1 control characters;
+ * DEL; surrogates; noncharacters (U+FFFE‥U+FFFF and others).
  */
 var xhtsafe = (function _closure_xhtsafe() {
-	var re = /((?:[\t\n\r -~\x85\xA0-\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])+)/;
+	var re = /((?:[\t\n\r -~\xA0-\uD7FF\uE000-\uFDCF\uFDF0-\uFFFD]|[\uD800-\uD83E\uD840-\uD87E\uD880-\uD8BE\uD8C0-\uD8FE\uD900-\uD93E\uD940-\uD97E\uD980-\uD9BE\uD9C0-\uD9FE\uDA00-\uDA3E\uDA40-\uDA7E\uDA80-\uDABE\uDAC0-\uDAFE\uDB00-\uDB3E\uDB40-\uDB7E\uDB80-\uDBBE\uDBC0-\uDBFE][\uDC00-\uDFFF]|[\uD83F\uD87F\uD8BF\uD8FF\uD93F\uD97F\uD9BF\uD9FF\uDA3F\uDA7F\uDABF\uDAFF\uDB3F\uDB7F\uDBBF\uDBFF][\uDC00-\uDFFD])+)/;
+	var rs = /[\x0C\x85]/g;
 
 	return (function xhtsafe(s) {
 		var i, j, o = "";
-		var g = String(s).split(re);
+		var g = String(s).replace(rs, "\r\n").split(re);
 
 		for (i = 0; i < g.length; ++i) {
 			for (j = 0; j < g[i].length; ++j)
