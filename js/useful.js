@@ -138,14 +138,14 @@ var text2html = (function _closure_text2html() {
     })();
 
 /**
- * Make a string XML/HTML/XHTML/tty-safe: for the BMP, substitute any
- * codepoint XML/HTML do not permit or that is any control character,
- * other than CRLF and Tab, with U+FFFD: most C0 controls and DEL and
- * all C1 controls; loose surrogates, U+FFFE‥U+FFFF (though not other
- * noncharacters). In astral planes U-00010000‥U-0010FFFF are passed.
+ * Make a string XML/HTML/XHTML/tty-safe: substitute codepoints not
+ * permitted by XML/HTML and control characters (other than newline
+ * and Tab) with U+FFFD (most C0 controls and DEL, C1 controls save
+ * NEL, loose surrogates, U+FFFE‥U+FFFF) but U-00010000‥U-0010FFFF,
+ * and the other noncharacters, are permitted.
  */
 var xhtsafe = (function _closure_xhtsafe() {
-	var re = /((?:[\t\n\r -~\xA0-\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])+)/;
+	var re = /((?:[\t\n\r -~\x85\xA0-\uD7FF\uE000-\uFFFD]|[\uD800-\uDBFF][\uDC00-\uDFFF])+)/;
 
 	return (function xhtsafe(s) {
 		var i, j, o = "";
