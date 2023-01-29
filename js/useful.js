@@ -17,10 +17,18 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-"use strict";
+
+/* jshint esversion: 3 */
+/* jshint browser: true */
 
 /* make this work with nodejs and in browsers */
-(function _closure_usefulJS(G) {
+(function _export_usefulJS(theclosure, self) {
+	if (typeof(exports) !== "undefined")
+		return (theclosure(exports));
+	self.usefulJS = {};
+	return (theclosure(self.usefulJS));
+    })(function _closure_usefulJS(G) {
+"use strict";
 
 var _hasOwnProperty = Object.prototype.hasOwnProperty;
 var _toString = Object.prototype.toString;
@@ -57,7 +65,7 @@ G.filter = Array.prototype.filter ? function filter(a, cb) {
     } : function filter(a, cb) {
 	var res = [], i, v;
 	for (i = 0; i < a.length; ++i)
-		if (usefulJS.hOP.call(a, i)) {
+		if (_hasOwnProperty.call(a, i)) {
 			v = a[i];
 			if (cb(v, i, a))
 				res.push(v);
@@ -351,7 +359,7 @@ G.hashlib = (function _closure_hashlib() {
 			value = pair.length < 1 ? null :
 			    decodeURIComponent(pair.length > 1 ?
 			    pair.join("=") : pair[0]);
-			if (usefulJS.hOP.call(values, key)) {
+			if (_hasOwnProperty.call(values, key)) {
 				if (!_isArray(values[key]))
 					values[key] = [values[key]];
 				values[key].push(value);
@@ -393,20 +401,20 @@ G.hashlib = (function _closure_hashlib() {
 	    };
 	var hl_get = function hashlib_get(key) {
 		key = String(key);
-		return (usefulJS.hOP.call(values, key) ?
+		return (_hasOwnProperty.call(values, key) ?
 		    values[key] : undefined);
 	    };
 	var hl_set = function hashlib_set(key, value) {
 		key = String(key);
 		if (value === undefined) {
-			keys = usefulJS.filter(keys, function unsetter(v) {
+			keys = G.filter(keys, function unsetter(v) {
 				return (v !== key);
 			    });
 			delete values[key];
 			updhash();
 			return;
 		}
-		if (!usefulJS.hOP.call(values, key))
+		if (!_hasOwnProperty.call(values, key))
 			keys.push(key);
 		if (value === null) {
 			values[key] = null;
@@ -415,7 +423,7 @@ G.hashlib = (function _closure_hashlib() {
 		} else {
 			var res = [], i;
 			for (i = 0; i < value.length; ++i)
-				if (usefulJS.hOP.call(value, i))
+				if (_hasOwnProperty.call(value, i))
 					res.push(value[i] === null ?
 					    null : String(value[i]));
 			values[key] = res;
@@ -478,6 +486,7 @@ G.ezXHR = function ezXHR(cb, url, data, method, rt) {
     };
 
 /* </_closure_usefulJS> */
-})(typeof(exports) === "undefined" ? (this["usefulJS"] = {}) : exports);
+return (G);
+}, this);
 
 /* canonical: <https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=useful-scripts/useful-scripts.git;a=tree;f=js;hb=HEAD> */
