@@ -153,7 +153,7 @@ G.date2mjd = function date2mjd(dateobject) {
 
 G.mjd2date = function mjd2date(mjd, sec) {
 	var s = (mjd - 40587) * 86400 + sec;
-	return (new Date(s));
+	return (new Date(s * 1000));
     };
 
 /**
