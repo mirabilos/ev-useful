@@ -50,6 +50,10 @@ var _needsdom = function _unavailable_outside_browser() {
  * usefulJS.hOP = Object.prototype.hasOwnProperty
  * usefulJS.toString = Object.prototype.toString
  * usefulJS.isArray = Array.isArray or polyfill
+ * usefulJS.isArraylike: iterate via length
+ * usefulJS.typeN: typeof() or "null"
+ * usefulJS.typeA: typeof() or "null" or "array"
+ * usefulJS.typeAL: typeof() or "null" or "array" using isArraylike
  * usefulJS.filter(array, callback): array.filter(callback) or polyfill
  * usefulJS.zpad(n, l, f=0): sprintf("%0*s", l, n.toFixed(f))
  * usefulJS.ISO8601(dateobject): dateobject.toISOString() timezone-aware
@@ -60,6 +64,38 @@ var _needsdom = function _unavailable_outside_browser() {
 G.hOP = _hasOwnProperty;
 G.toString = Object.prototype.toString;
 G.isArray = _isArray;
+G.isArraylike = function isArraylike(o) {
+	if (o === null)
+		return (false);
+	var t = typeof(o);
+	if (t !== "object" &&
+	    /* functions by default have a length property */
+	    /* so allow only these with a method item(), by convention */
+	    /* mostly to accept DOM NodeList objects */
+	    (t !== "function" || typeof(o.item) !== "function"))
+		return (false);
+	return (typeof(o.length) === "number" &&
+	    /* more hacks for NodeList */
+	    o.nodeType !== 3 && o.nodeType !== 4);
+    };
+G.typeN = function typeN(o) {
+	return (o === null ? "null" : typeof(o));
+    };
+G.typeA = function typeA(o) {
+	return (o === null ? "null" : _isArray(o) ? "array" : typeof(o));
+    };
+G.typeAL = function typeAL(o) {
+	if (o === null)
+		return ("null");
+	if (_isArray(o))
+		return ("array");
+	var t = typeof(o);
+	if (t !== "object" &&
+	    (t !== "function" || typeof(o.item) !== "function"))
+		return (t);
+	return ((typeof(o.length) === "number" &&
+	    o.nodeType !== 3 && o.nodeType !== 4) ? "array" : t);
+    };
 G.filter = Array.prototype.filter ? function filter(a, cb) {
 	return (a.filter(cb));
     } : function filter(a, cb) {
