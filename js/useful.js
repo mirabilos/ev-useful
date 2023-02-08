@@ -151,8 +151,10 @@ G.date2mjd = function date2mjd(dateobject) {
 	return ([mjd, sec]);
     };
 
-G.mjd2date = function mjd2date(mjd, sec) {
+G.mjd2date = function mjd2date(mjd, sec, return_millis) {
 	var s = (mjd - 40587) * 86400 + sec;
+	if (return_millis)
+		return (s * 1000);
 	return (new Date(s * 1000));
     };
 

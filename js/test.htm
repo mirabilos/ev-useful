@@ -182,6 +182,14 @@
 	elts.ts.innerText = usefulJS.ISO8601(now);
 	elts.mjd.innerText = usefulJS.date2mjd(now).join("z");
 	elts.cv = 'initial comment';
+
+	var gpsepoch_mjd = [ 44244, 0 ];
+	var gpsepoch_date = usefulJS.mjd2date(gpsepoch_mjd[0], gpsepoch_mjd[1]);
+	var gpsepoch_timet = usefulJS.mjd2date(gpsepoch_mjd[0], gpsepoch_mjd[1],
+	    true) / 1000;
+	reslog("GPS epoch: MJD " + gpsepoch_mjd.join("z") +
+	    " POSIX " + gpsepoch_timet +
+	    " ISO8601 " + usefulJS.ISO8601(gpsepoch_date));
   });
  //--><!]]></script>
 </head><body>
