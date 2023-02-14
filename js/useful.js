@@ -254,25 +254,38 @@ G.xhtsafe = (function _closure_xhtsafe() {
 G.deferDOM = (function _closure_deferDOM() {
 	if (typeof(document) === "undefined")
 		return (_needsdom);
-	/* possibly skip all that setup */
-	var _ready = function deferDOM_alreadyComplete(cb) {
+
+	/* usefulJS.deferDOM(cb) once DOM is ready */
+	var readyfn = function deferDOM_complete(cb) {
 		if (typeof(cb) === "function")
 			cb();
 		return (true);
 	    };
-	if (document.readyState === "complete")
-		return (_ready);
-	/* note: we check again below, DOM can get ready during execution */
 
-	var called = false;
-	var tmo = false;
-	var callbackfns = [];
+	/*
+	 * we return an indirect function in case someone stores the
+	 * value of usefulJS.deferDOM, but also update the latter so
+	 * the user’s calls go to the active function directly
+	 */
+	var indir;
+	var donefn = function deferDOM_unsetup(cb) {
+		indir = readyfn;
+		G.deferDOM = readyfn;
+		return (readyfn(cb));
+	    };
+
+	var called = false;	// handler called?
+	var tmo = false;	// old browser stuff
+	var callbackfns = [];	// user callback functions
+	/* event handler attached to a lot of places, first wins */
 	var handler = function deferDOM_handler() {
-		/* execute once only */
+		/* execute only once */
 		if (called)
 			return;
 		called = true;
-		/* clear event handlers and timers */
+		/* subsequent calls must not enqueue */
+		donefn();
+		/* clear event handlers and timers set up */
 		if (document.addEventListener) {
 			document.removeEventListener("DOMContentLoaded",
 			    handler, false);
@@ -289,13 +302,16 @@ G.deferDOM = (function _closure_deferDOM() {
 	    };
 
 	/* install DOM readiness listeners */
-
-	if (document.addEventListener) {
+	var setupfn = function deferDOM_setup() {
 		/* Opera 9 and other modern browsers */
-		document.addEventListener("DOMContentLoaded", handler, false);
-		/* last resort: always works, but later than possible */
-		window.addEventListener("load", handler, false);
-	} else {
+		if (document.addEventListener) {
+			document.addEventListener("DOMContentLoaded",
+			    handler, false);
+			/* last resort: always works, but later than possible */
+			window.addEventListener("load", handler, false);
+			return;
+		}
+
 		/* IE or something */
 		var tryPoll = false;
 		if (document.documentElement.doScroll) {
@@ -304,53 +320,64 @@ G.deferDOM = (function _closure_deferDOM() {
 			} catch (e) {}
 		}
 		if (tryPoll) {
-			tryPoll = document.documentElement.doScroll;
-			var poll = function deferDOM_poll() {
+			var _scroll = document.documentElement.doScroll;
+			var _apoll = function deferDOM_poll() {
 				try {
-					tryPoll("left");
+					_scroll("left");
 				} catch (e) {
-					tmo = window.setTimeout(poll, 50);
+					tmo = window.setTimeout(_apoll, 50);
 					return;
 				}
 				handler();
 			    };
-			poll();
+			_apoll();
 		}
 		/* generic ancient browser */
 		var rdychange = function deferDOM_rdychange() {
 			if (document.readyState === "complete")
 				handler();
-			/* detach if ever called from anywhere */
 			if (!called)
+				/* DOM not yet ready */
 				return;
+			/* detach if ever called from anywhere */
 			document.detachEvent("onreadystatechange", rdychange);
 		    };
 		document.attachEvent("onreadystatechange", rdychange);
 		/* last resort: always works, but later than possible */
 		window.attachEvent("onload", handler);
-	}
-
-	/* already loaded? */
-	if (document.readyState === "complete") {
-		/* undo all that attaching */
-		handler();
-		/* skip longer function from below */
-		return (_ready);
-	}
-
-	/* function that is called by the user */
-	return (function deferDOM(cb) {
-		/* DOM not ready yet? */
-		if (!called) {
-			/* enqueue into list of callbacks to run */
-			if (typeof(cb) === "function")
-				callbackfns.push(cb);
-			return (false);
-		}
-		/* already ready, so just run callback now */
+	    };
+	/* usefulJS.deferDOM(cb) after setup but incomplete DOM */
+	var enqfn = function deferDOM_enqueue(cb) {
 		if (typeof(cb) === "function")
-			cb();
-		return (true);
+			callbackfns.push(cb);
+		return (false);
+	    };
+	/* usefulJS.deferDOM(cb) before setup */
+	var initfn = function deferDOM_initial(cb) {
+		/* if possible, skip all that */
+		if (document.readyState === "complete")
+			return (donefn(cb));
+		/* subsequent call will enqueue; setup handler */
+		indir = enqfn;
+		setupfn();
+		/* except if DOM got ready in the meantime */
+		if (document.readyState === "complete") {
+			/* undo all that attaching */
+			handler();
+			/* goto finish */
+			return (donefn(cb));
+		}
+		/* just enqueue that */
+		return (enqfn(cb));
+	    };
+
+	/* function the user calls (shortcut, or indirect) */
+	if (document.readyState === "complete")
+		return (readyfn);
+	/* indirect (just in case) */
+	indir = initfn;
+	return (function deferDOM(cb) {
+		return (indir(cb));
 	    });
     })();
 
