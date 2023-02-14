@@ -384,7 +384,7 @@ G.deferDOM = (function _closure_deferDOM() {
 /**
  * Usage:
  *
- * • hashlib(cb);
+ * • hashlib(cb) → hashlib
  *   initialise hashlib if not yet done and, if cb is a function,
  *   register it to be called on document hash change, cumulative
  * • hashlib.get(key) → String|null|Array[String|null]|undefined
@@ -534,6 +534,7 @@ G.hashlib = (function _closure_hashlib() {
 			hl_initialise(hl);
 		if (typeof(cb) === "function")
 			callbacks.push(cb);
+		return (hl);
 	    };
 	// ONLY for debugging!
 	//hl.getValues = function hl_getv() { return (values); };
