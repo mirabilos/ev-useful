@@ -406,7 +406,6 @@ G.hashlib = (function _closure_hashlib() {
 	if (typeof(document) === "undefined")
 		return (_needsdom);
 
-	var initialised = false;
 	var set_initiated = false;
 	var callbacks = [];
 	var prevhash = "";
@@ -517,7 +516,7 @@ G.hashlib = (function _closure_hashlib() {
 		updhash();
 	    };
 	var hl_initialise = function hl_initialise(hl) {
-		initialised = true;
+		hl_initialise = false;
 		if (typeof(window.onhashchange) !== "undefined" &&
 		    (document.documentMode === undefined || document.documentMode > 7))
 			window.onhashchange = checkhash;
@@ -530,7 +529,7 @@ G.hashlib = (function _closure_hashlib() {
 		hl.clear = hl_clear;
 	    };
 	var hl = function hashlib(cb) {
-		if (!initialised)
+		if (hl_initialise !== false)
 			hl_initialise(hl);
 		if (typeof(cb) === "function")
 			callbacks.push(cb);
