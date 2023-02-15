@@ -241,6 +241,15 @@ G.xhtsafe = (function _closure_xhtsafe() {
 	    });
     })();
 
+/* usefulJS.deferDOM(cb) (once DOM is ready) */
+function deferDOM_ready(cb) {
+	if (typeof(cb) === "function")
+		cb();
+	return (true);
+}
+
+var deferDOM_indir;
+
 /**
  * Usage:
  *
@@ -251,31 +260,31 @@ G.xhtsafe = (function _closure_xhtsafe() {
  *
  * Both return true if the DOM is ready, false otherwise.
  */
-G.deferDOM = (function _closure_deferDOM() {
+G.deferDOM = (function _closure_deferDOM(indirfnf, redirfn) {
 	if (typeof(document) === "undefined")
 		return (_needsdom);
-
-	/* usefulJS.deferDOM(cb) once DOM is ready */
-	var readyfn = function deferDOM_complete(cb) {
-		if (typeof(cb) === "function")
-			cb();
-		return (true);
-	    };
 
 	/*
 	 * we return an indirect function in case someone stores the
 	 * value of usefulJS.deferDOM, but also update the latter so
 	 * the user’s calls go to the active function directly
 	 */
-	var indir;
+	var indirfn = indirfnf();
+	/* but perhaps the DOM already is ready? */
+	if (document.readyState === "complete")
+		return (deferDOM_ready);
+	/* go for it */
+	deferDOM_indir = indirfn;
+	return (redirfn);
+    })(function _closure_deferDOM_impl() {
 	var donefn = function deferDOM_unsetup(cb) {
-		indir = readyfn;
-		G.deferDOM = readyfn;
-		return (readyfn(cb));
+		deferDOM_indir = deferDOM_ready;
+		G.deferDOM = deferDOM_ready;
+		return (deferDOM_ready(cb));
 	    };
 
 	var called = false;	// handler called?
-	var tmo = false;	// old browser stuff
+	var tmo = null;		// old browser stuff
 	var callbackfns = [];	// user callback functions
 	/* event handler attached to a lot of places, first wins */
 	var handler = function deferDOM_handler() {
@@ -291,14 +300,17 @@ G.deferDOM = (function _closure_deferDOM() {
 			    handler, false);
 			window.removeEventListener("load", handler, false);
 		} else {
-			if (tmo !== false)
+			if (tmo !== null) {
 				window.clearTimeout(tmo);
+				tmo = null; //gc
+			}
 			window.detachEvent("onload", handler);
 		}
 		/* run user callbacks */
 		var i;
 		for (i = 0; i < callbackfns.length; ++i)
 			callbackfns[i]();
+		callbackfns = null; //gc
 	    };
 
 	/* install DOM readiness listeners */
@@ -309,6 +321,7 @@ G.deferDOM = (function _closure_deferDOM() {
 			    handler, false);
 			/* last resort: always works, but later than possible */
 			window.addEventListener("load", handler, false);
+			setupfn = null; //gc
 			return;
 		}
 
@@ -328,6 +341,7 @@ G.deferDOM = (function _closure_deferDOM() {
 					tmo = window.setTimeout(_apoll, 50);
 					return;
 				}
+				_apoll = null; //gc
 				handler();
 			    };
 			_apoll();
@@ -341,24 +355,27 @@ G.deferDOM = (function _closure_deferDOM() {
 				return;
 			/* detach if ever called from anywhere */
 			document.detachEvent("onreadystatechange", rdychange);
+			rdychange = null; //gc
 		    };
 		document.attachEvent("onreadystatechange", rdychange);
 		/* last resort: always works, but later than possible */
 		window.attachEvent("onload", handler);
-	    };
-	/* usefulJS.deferDOM(cb) after setup but incomplete DOM */
-	var enqfn = function deferDOM_enqueue(cb) {
-		if (typeof(cb) === "function")
-			callbackfns.push(cb);
-		return (false);
+		setupfn = null; //gc
 	    };
 	/* usefulJS.deferDOM(cb) before setup */
-	var initfn = function deferDOM_initial(cb) {
+	return (function deferDOM_initfn(cb) {
 		/* if possible, skip all that */
 		if (document.readyState === "complete")
 			return (donefn(cb));
-		/* subsequent call will enqueue; setup handler */
-		indir = enqfn;
+		/* usefulJS.deferDOM(cb) after setup but incomplete DOM */
+		var enqfn = function deferDOM_enqueue(cb) {
+			if (typeof(cb) === "function")
+				callbackfns.push(cb);
+			return (false);
+		    };
+		/* subsequent calls will enqueue */
+		deferDOM_indir = enqfn;
+		/* set up handler */
 		setupfn();
 		/* except if DOM got ready in the meantime */
 		if (document.readyState === "complete") {
@@ -369,17 +386,10 @@ G.deferDOM = (function _closure_deferDOM() {
 		}
 		/* just enqueue that */
 		return (enqfn(cb));
-	    };
-
-	/* function the user calls (shortcut, or indirect) */
-	if (document.readyState === "complete")
-		return (readyfn);
-	/* indirect (just in case) */
-	indir = initfn;
-	return (function deferDOM(cb) {
-		return (indir(cb));
 	    });
-    })();
+    }, /* redirfn = */ function deferDOM(cb) {
+	return (deferDOM_indir(cb));
+    });
 
 /**
  * Usage:
@@ -516,7 +526,7 @@ G.hashlib = (function _closure_hashlib() {
 		updhash();
 	    };
 	var hl_initialise = function hashlib_initialise(hl) {
-		hl_initialise = false;
+		hl_initialise = null; //gc
 		if (typeof(window.onhashchange) !== "undefined" &&
 		    (document.documentMode === undefined || document.documentMode > 7))
 			window.onhashchange = checkhash;
@@ -529,7 +539,7 @@ G.hashlib = (function _closure_hashlib() {
 		hl.clear = hl_clear;
 	    };
 	var hl = function hashlib(cb) {
-		if (hl_initialise !== false)
+		if (hl_initialise !== null)
 			hl_initialise(hl);
 		if (typeof(cb) === "function")
 			callbacks.push(cb);
