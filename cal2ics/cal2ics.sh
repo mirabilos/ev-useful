@@ -1,5 +1,7 @@
 #!/bin/mksh
 #-
+# Copyright © 2023
+#	mirabilos <m@mirbsd.org>
 # Copyright © 2021
 #	mirabilos <t.glaser@tarent.de>
 #
@@ -34,7 +36,7 @@ die() {
 }
 
 usage() {
-	print -ru2 "Usage: $0 [-l localtimezone] calendarfile >converted.ics"
+	print -ru2 "Usage: $0 [-l localtimezone] [-n name] calendarfile >converted.ics"
 	exit ${1:-1}
 }
 
@@ -48,13 +50,15 @@ function hsh {
 }
 
 localtime=-
+calname=
 defdur=PT42M
 ca=$'\x01'
 cr=$'\r'
-while getopts 'hl:' ch; do
+while getopts 'hl:n:' ch; do
 	case $ch {
 	(h) usage 0 ;;
 	(l) localtime=$OPTARG ;;
+	(n) calname=$OPTARG ;;
 	(*) usage ;;
 	}
 done
@@ -272,6 +276,12 @@ set -sA tzs -- "${tzs[@]}"
 oo 'BEGIN:VCALENDAR'
 oo 'VERSION:2.0'
 ow 'PRODID:https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=useful-scripts/useful-scripts.git\;a=tree\;f=cal2ics\;hb=HEAD'
+if [[ -n $calname ]]; then
+	# RFC 7986
+	ot NAME "$calname"
+	# https://stackoverflow.com/a/17187346/2171120
+	ot X-WR-CALNAME "$calname"
+fi
 for tz in "${tzs[@]}"; do
 	[[ $tz = UTC ]] && continue
 	sed -n '/^BEGIN:VTIMEZONE/,/^END:VTIMEZONE/p' \
