@@ -7,7 +7,7 @@ if (!defined('__main__') && count(get_included_files()) <= 1 && count(debug_back
  *
  * Copyright © 2020
  *	mirabilos <m@mirbsd.org>
- * Copyright © 2010, 2011, 2012, 2014, 2016, 2017
+ * Copyright © 2010, 2011, 2012, 2014, 2016, 2017, 2022
  *	mirabilos <t.glaser@tarent.de>
  *
  * Provided that these terms and disclaimer and all copyright notices
@@ -141,7 +141,7 @@ function minijson_encode_ob_string($x, $truncsz=0, $leader='"') {
 			$wc = ($c & 0x0F) << 12;
 			$wmin = 0x800;
 			$Ss = 2;
-		} elseif ($c < 0xF8) {
+		} elseif ($c < 0xF4) {
 			$wc = ($c & 0x07) << 18;
 			$wmin = 0x10000;
 			$Ss = 3;
@@ -284,8 +284,8 @@ function minijson_encode_ob($x, $ri, $depth, $truncsz, $dumprsrc) {
 	}
 	$Si = ',' . $xi;
 
-	/* arrays, potentially empty or non-associative */
-	if (is_array($x)) {
+	/* arrays, may be empty or non-associative */
+	if (is_array($x) || is_a($x, 'SplFixedArray')) {
 		if (!($n = count($x))) {
 			echo '[]';
 			return;
