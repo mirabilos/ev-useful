@@ -54,8 +54,10 @@ calname=
 defdur=PT42M
 ca=$'\x01'
 cr=$'\r'
-while getopts 'hl:n:' ch; do
+set -A cal_cmd -- calendar -PP
+while getopts 'D:hl:n:' ch; do
 	case $ch {
+	(D) cal_cmd+=("-D$OPTARG") ;;
 	(h) usage 0 ;;
 	(l) localtime=$OPTARG ;;
 	(n) calname=$OPTARG ;;
@@ -201,7 +203,7 @@ function emit {
 }
 
 T=$(mktemp -d /tmp/cal2ics.XXXXXXXXXX) || die cannot create temporary directory
-calendar -PPf "$F" >"$T/p" || die cannot parse "${F@Q}" as calendar file
+"${cal_cmd[@]}" -f "$F" >"$T/p" || die cannot parse "${F@Q}" as calendar file
 print '>' >>"$T/p" || die huh?
 cd "$T" || die cannot change to temporary directory
 s=0
