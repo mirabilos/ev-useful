@@ -36,7 +36,8 @@ die() {
 }
 
 usage() {
-	print -ru2 "Usage: $0 [-l localtimezone] [-n name] calendarfile >converted.ics"
+	print -ru2 "Usage: $0 [-l localtimezone] [-n name]"
+	print -ru2 "	[-D…] [-I…] calendarfile >converted.ics"
 	exit ${1:-1}
 }
 
@@ -55,10 +56,11 @@ defdur=PT42M
 ca=$'\x01'
 cr=$'\r'
 set -A cal_cmd -- calendar -PP
-while getopts 'D:hl:n:' ch; do
+while getopts 'D:hI:l:n:' ch; do
 	case $ch {
 	(D) cal_cmd+=("-D$OPTARG") ;;
 	(h) usage 0 ;;
+	(I) cal_cmd+=("-I$OPTARG") ;;
 	(l) localtime=$OPTARG ;;
 	(n) calname=$OPTARG ;;
 	(*) usage ;;
