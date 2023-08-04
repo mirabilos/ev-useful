@@ -78,6 +78,9 @@ while IFS=' ' read -r a arch log state l; do
 	:||if [[ $arch = alpha ]]; then
 		archs[narchs++]=avr32
 	fi
+	:||if [[ $arch = armhf ]]; then
+		break
+	fi
 done <s.lst
 
 print -ru2 -- "I: found $narchs architectures, ${#logs[*]} with logs"
@@ -159,7 +162,7 @@ while (( ++i < narchs )); do
 	}
 	cat >>columnus <<-EOF
 		${archs[i]})mksh)${vvsystem:-⁉ unset})${vvmksh_klibc:-⁉ unset})${vvmksh_musl:-⁉ unset})${vvmksh_dietlibc:-⁉ unset})${vvmksh_glibc:-⁉ unset}
-		${vvarch:+}${vvarch:- })lksh) $bred version$vsn)${vvlksh_klibc:-⁉ unset})${vvlksh_musl:-⁉ unset})${vvlksh_dietlibc:-⁉ unset})${vvlksh_glibc:-⁉ unset}
+		${vvarch:+}${vvarch:- })lksh) $bred $vsn)${vvlksh_klibc:-⁉ unset})${vvlksh_musl:-⁉ unset})${vvlksh_dietlibc:-⁉ unset})${vvlksh_glibc:-⁉ unset}
 	EOF
 done
 
@@ -173,12 +176,12 @@ ed -s tabularis <<-\EOF
 	,g/✗[^ ]*/s//[0;31;40m&/g
 	,g/☒[^ ]*/s//[0;1;35;40m&/g
 	,g/✔[^ ]*/s//[0;1;32;40m&/g
-	,g/ ↑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1 [0;1m\2 /
-	,g/ ↑\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1 [1m\2 /
-	,g/ ⇑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1 [0;31;1m\2 /
-	,g/ ⇑\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1 [31;1m\2 /
-	,g/ ⇓\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1 [0;5;1m\2 /
-	,g/ ⇓\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1 [5;1m\2 /
+	,g/ ↑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1v[0;1m\2 /
+	,g/ ↑\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1v[1m\2 /
+	,g/ ⇑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1v[0;31;1m\2 /
+	,g/ ⇑\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1v[31;1m\2 /
+	,g/ ⇓\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1v[0;5;1m\2 /
+	,g/ ⇓\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1v[5;1m\2 /
 	,g/⸘/s//[0;1;36;40m/g
 	1s/^/[0m/
 	1s/  */&| /g
