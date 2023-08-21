@@ -3,7 +3,7 @@ PRODID:-//citadel.org//NONSGML Citadel calendar//EN
 VERSION:2.0
 BEGIN:VTIMEZONE
 TZID:Asia/Ujung_Pandang
-TZID-ALIAS-OF:/citadel.org/20220930_1/Asia/Makassar
+TZID-ALIAS-OF:Asia/Makassar
 LAST-MODIFIED:20220930T135922Z
 X-LIC-LOCATION:Asia/Ujung_Pandang
 BEGIN:STANDARD

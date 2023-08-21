@@ -3,7 +3,7 @@ PRODID:-//citadel.org//NONSGML Citadel calendar//EN
 VERSION:2.0
 BEGIN:VTIMEZONE
 TZID:Atlantic/Jan_Mayen
-TZID-ALIAS-OF:/citadel.org/20220930_1/Europe/Berlin
+TZID-ALIAS-OF:Europe/Berlin
 LAST-MODIFIED:20220930T135922Z
 X-LIC-LOCATION:Atlantic/Jan_Mayen
 BEGIN:DAYLIGHT

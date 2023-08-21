@@ -3,7 +3,7 @@ PRODID:-//citadel.org//NONSGML Citadel calendar//EN
 VERSION:2.0
 BEGIN:VTIMEZONE
 TZID:Canada/Newfoundland
-TZID-ALIAS-OF:/citadel.org/20220930_1/America/St_Johns
+TZID-ALIAS-OF:America/St_Johns
 LAST-MODIFIED:20220930T135922Z
 X-LIC-LOCATION:Canada/Newfoundland
 BEGIN:STANDARD

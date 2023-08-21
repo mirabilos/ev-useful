@@ -67,4 +67,4 @@ find zoneinfo/ -type f -a -name \*.ics -print0 | \
 done
 cd "$wd"
 rm -r .tmp
-: ok
+: ok but remember to fix up the TZID-ALIAS-OF properties

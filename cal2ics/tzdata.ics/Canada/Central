@@ -3,7 +3,7 @@ PRODID:-//citadel.org//NONSGML Citadel calendar//EN
 VERSION:2.0
 BEGIN:VTIMEZONE
 TZID:Canada/Central
-TZID-ALIAS-OF:/citadel.org/20220930_1/America/Winnipeg
+TZID-ALIAS-OF:America/Winnipeg
 LAST-MODIFIED:20220930T135922Z
 X-LIC-LOCATION:Canada/Central
 BEGIN:DAYLIGHT

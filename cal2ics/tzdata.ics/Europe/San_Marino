@@ -3,7 +3,7 @@ PRODID:-//citadel.org//NONSGML Citadel calendar//EN
 VERSION:2.0
 BEGIN:VTIMEZONE
 TZID:Europe/San_Marino
-TZID-ALIAS-OF:/citadel.org/20220930_1/Europe/Rome
+TZID-ALIAS-OF:Europe/Rome
 LAST-MODIFIED:20220930T135922Z
 X-LIC-LOCATION:Europe/San_Marino
 BEGIN:DAYLIGHT

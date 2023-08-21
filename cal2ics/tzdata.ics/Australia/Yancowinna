@@ -3,7 +3,7 @@ PRODID:-//citadel.org//NONSGML Citadel calendar//EN
 VERSION:2.0
 BEGIN:VTIMEZONE
 TZID:Australia/Yancowinna
-TZID-ALIAS-OF:/citadel.org/20220930_1/Australia/Broken_Hill
+TZID-ALIAS-OF:Australia/Broken_Hill
 LAST-MODIFIED:20220930T135922Z
 X-LIC-LOCATION:Australia/Yancowinna
 BEGIN:STANDARD
