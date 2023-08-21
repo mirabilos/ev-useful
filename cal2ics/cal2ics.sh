@@ -87,7 +87,17 @@ F=$1
 FH=${|hsh "$F";}
 H=$(hostname -f 2>/dev/null) || H=$(hostname) || die hostname failed
 [[ -n $H ]] || die hostname empty
-dtstamp=$(date -u +'%Y%m%dT%H%M%SZ')
+# take timestamp of input, not now (below commented out)
+if stat --help >/dev/null 2>&1; then
+	dtstamp=$(stat -L -c %Y "$F") || \
+	    die GNU stat failed
+	dtstamp=$(date -u -d "@$dtstamp" +'%Y%m%dT%H%M%SZ') || \
+	    die GNU date failed
+else
+	dtstamp=$(TZ=UTC stat -f %Sm -L -t %Y%m%dT%H%M%SZ "$F") || \
+	    die BSD stat failed
+fi
+#dtstamp=$(date -u +'%Y%m%dT%H%M%SZ')
 
 function oo {
 	print -r -- "$1$cr" || die cannot output
