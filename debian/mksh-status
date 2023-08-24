@@ -65,11 +65,10 @@ while IFS=' ' read -r a arch log state l; do
 	state=${state#'<'}
 	state=${state%'>'}
 	case $arch in
-	(hurd-i386) arch=hurd ;;
-	(hurd*) die "another hurd* found: ${arch@Q}" ;;
-	(kfreebsd-i386) arch=k-i386 ;;
-	(kfreebsd-amd64) arch=k-amd64 ;;
-	(k-*|kfreebsd*) die "another k(freebsd)* found: ${arch@Q}" ;;
+	(hurd-amd64) arch=H-amd64 ;;
+	(hurd-i386) arch=H-i386 ;;
+	(H-*|hurd*) die "another hurd* found: ${arch@Q}" ;;
+	(kfreebsd*) die "kfreebsd* found: ${arch@Q}" ;;
 	esac
 	[[ -n $log ]] && logs[narchs]=$log
 	states[narchs]=$state
