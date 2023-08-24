@@ -168,6 +168,7 @@ done
 column -ts')' <columnus >tabularis
 ed -s tabularis <<-\EOF
 	,g/✓[^ ]*/s//[0;1;30;40m&/g
+	,g/✓ ntty[^ ]*/s//[0;32;40m&/g
 	,g/？[^ ]*/s//[0;33;40m&/g
 	,g/⁉[^ ]*/s//[0;1;33;40m&/g
 	,g/⁇[^ ]*/s//[0;35;40m&/g
