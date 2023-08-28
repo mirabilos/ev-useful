@@ -1,0 +1,55 @@
+#!/bin/mksh
+# © mirabilos Ⓕ MirBSD
+
+unset LANGUAGE
+export LC_ALL=C.UTF-8
+
+function die {
+	print -ru2 -- "E: $@"
+	exit 1
+}
+
+lpbase="https://launchpad.net/"
+ppabase="${lpbase}~mirabilos/+archive/ubuntu/ppa/"
+function tourl {
+	if [[ $1 = http?(s)://* ]]; then
+		REPLY=$1
+	elif [[ $1 = /* ]]; then
+		REPLY=$lpbase${1##+(/)}
+	else
+		REPLY=${ppabase}$1
+	fi
+}
+
+T=$(mktemp -d /tmp/mksh-status.XXXXXXXXXX) || die cannot create temporary directory
+
+rv=0
+(
+set -e
+set -o pipefail
+cd "$T"
+
+lynx -source "${ppabase}+packages?field.name_filter=mksh&field.status_filter=published" | \
+    tee s.htm | \
+    xmlstarlet fo -e UTF-8 -H -R | \
+    sed --posix 's!<html xmlns="http://www.w3.org/1999/xhtml"!<html!' \
+    >s.xml
+
+<s.xml >s.lst xmlstarlet sel -T -B -E UTF-8 -t \
+    -m '//tr[contains(@class, "archive_package_row") and contains("|Trusty|Xenial|Bionic|Focal|Jammy|", concat("|", td[5], "|"))]' \
+    -v 'td[1]/a/@href' -o '' -b
+
+while IFS= read -r -d '' line; do
+	url=${|tourl "$line";}
+	print -r -- "$url"
+done <s.lst
+
+
+
+print -nr -- "[0;1;30;40m⇐ $PWD ⇒ press Return to continue…[0m"
+read
+
+) || rv=1
+cd /
+rm -rf "$T"
+exit $rv
