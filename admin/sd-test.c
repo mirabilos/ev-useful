@@ -1,8 +1,11 @@
 /* © 2023 mirabilos Ⓕ CC0 */
 
-/* gcc -O2 -Wall -Wextra -Iinc -o sd-test sd-test.c ;#*/
+/* gcc -O2 -Wall -Wextra -D_GNU_SOURCE -Iinc -o sd-test sd-test.c ;#*/
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,8 +30,8 @@ static const char *progname;
 static __dead void
 usage(void)
 {
-	fprintf(stderr, "Usage:	./%s write «size» '«passkey»' >/dev/sdX"
-			"\n	./%s check «size» '«passkey»' </dev/sdX"
+	fprintf(stderr, "Usage:	./%s write «size» '«passkey»' /dev/sdX"
+			"\n	./%s check «size» '«passkey»' /dev/sdX"
 	    "\n", progname, progname);
 	fprintf(stderr,
 	    "    Where «size» is in KiB (e.g. from /proc/partitions third column)\n"
@@ -57,8 +60,10 @@ main(int argc, char *argv[])
 	unsigned long long i, z, tot;
 	unsigned long long nbytes;
 	struct arcfour_status c;
+	int fd;
 	ssize_t s;
 	char *cp = NULL;
+	struct stat sb;
 
 	progname = argc > 0 && argv[0] ? argv[0] : "sd-test";
 	if (strrchr(progname, '/') != NULL)
@@ -72,7 +77,7 @@ main(int argc, char *argv[])
 
 	/* parse command line */
 
-	if (argc != 4)
+	if (argc != 5)
 		usage();
 
 	errno = 0;
@@ -88,6 +93,20 @@ main(int argc, char *argv[])
 
 	if (argv[3][0] == '\0') {
 		fprintf(stderr, "E: empty passkey\n");
+		usage();
+	}
+
+	if (stat(argv[4], &sb)) {
+		fprintf(stderr, "E: could not stat %s: %s\n",
+		    argv[4], strerror(errno));
+		usage();
+	}
+	switch (sb.st_mode & S_IFMT) {
+	case S_IFBLK:
+	case S_IFREG: /* for testing */
+		break;
+	default:
+		fprintf(stderr, "E: %s is not a block device\n", argv[4]);
 		usage();
 	}
 
@@ -107,10 +126,16 @@ main(int argc, char *argv[])
 			return (2);
 		}
 
+		if ((fd = open(argv[4], O_WRONLY | O_DIRECT | O_SYNC)) < 0) {
+			fprintf(stderr, "E: could not open %s for %s: %s\n",
+			    argv[4], "writing", strerror(errno));
+			usage();
+		}
+
 		tot = 0;
 		while (tot < nbytes) {
 			i = tot / MYBUFLEN;
-			fprintf(stderr, "\rI: %llu%s GiB...",
+			fprintf(stderr, "\rI: %llu%s GiB...    ",
 			    i / 8ULL, fracs[i % 8ULL]);
 			fflush(stderr);
 
@@ -122,7 +147,7 @@ main(int argc, char *argv[])
 			while (i < z)
 				xbuf[i++] = arcfour_byte(&c);
 
-			s = write(1, xbuf, (size_t)z);
+			s = write(fd, xbuf, (size_t)z);
 			if (s == -1) {
 				fprintf(stderr,
 				    "\nE: error writing %llu bytes: %s\n",
@@ -149,16 +174,24 @@ main(int argc, char *argv[])
 		    "\rI: %llu%s GiB + %llu bytes total (%llu MiB + %u KiB + %u bytes)\n",
 		    i / 8ULL, fracs[i % 8ULL], z,
 		    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL));
+		if (close(fd))
+			fprintf(stderr, "W: close(2): %s\n", strerror(errno));
 		fprintf(stderr,
 		    "I: now sync(1) then eject, re-insert, run ./%s check\n",
 		    progname);
 	} else if (!strcmp(argv[1], "check")) {
 		int rv = 0;
 
+		if ((fd = open(argv[4], O_RDONLY | O_DIRECT)) < 0) {
+			fprintf(stderr, "E: could not open %s for %s: %s\n",
+			    argv[4], "reading", strerror(errno));
+			usage();
+		}
+
 		tot = 0;
 		while (tot < nbytes) {
 			i = tot / MYBUFLEN;
-			fprintf(stderr, "\rI: %llu%s GiB...",
+			fprintf(stderr, "\rI: %llu%s GiB...    ",
 			    i / 8ULL, fracs[i % 8ULL]);
 			fflush(stderr);
 
@@ -166,7 +199,7 @@ main(int argc, char *argv[])
 			if (z > MYBUFLEN)
 				z = MYBUFLEN;
 
-			s = read(0, xbuf, (size_t)z);
+			s = read(fd, xbuf, (size_t)z);
 			if (s == -1) {
 				fprintf(stderr,
 				    "\nE: error reading %llu bytes: %s\n",
@@ -225,6 +258,8 @@ main(int argc, char *argv[])
 		    "\rI: %llu%s GiB + %llu bytes total (%llu MiB + %u KiB + %u bytes)\n",
 		    i / 8ULL, fracs[i % 8ULL], z,
 		    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL));
+		if (close(fd))
+			fprintf(stderr, "W: close(2): %s\n", strerror(errno));
 		fprintf(stderr, "I: test completed successfully\n");
 	} else
 		usage();
