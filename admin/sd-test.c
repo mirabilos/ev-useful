@@ -1,6 +1,6 @@
 /* © 2023 mirabilos Ⓕ CC0 */
 
-/* gcc -O2 -Wall -Wextra -D_GNU_SOURCE -UUSE_256M -Iinc -o sd-test sd-test.c ;#*/
+/* gcc -O2 -Wall -Wextra -D_GNU_SOURCE -Iinc -o sd-test sd-test.c ;#*/
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,15 +20,16 @@
 #include "arcfour_ksa.c"
 /*#include "hdump.c"*/
 
-#ifdef USE_256M
-/* fix fracs[] when changing this value! */
-#define MYBUFLEN (256ULL * 1024ULL * 1024ULL)
-#define MYBUFFAC 4
-#else
-/* fix fracs[] when changing this value! */
-#define MYBUFLEN (128ULL * 1024ULL * 1024ULL)
-#define MYBUFFAC 8
-#endif
+#define KiB		(1024UL)
+#define MiB		(1024UL * 1024UL)
+#define GiB		(1024UL * 1024UL * 1024UL)
+
+#define myF_GM		"%llu GiB + %u MiB"
+#define myF_GB		"%llu GiB + %u MiB + %u bytes"
+#define myA_GM(x)	(x) / GiB, (unsigned)(((x) % GiB) / MiB)
+#define myA_GB(x)	(x) / GiB, (unsigned)(((x) % GiB) / MiB), (unsigned)((x) % MiB)
+
+#define MYBUFLEN	(32ULL * MiB)
 
 static uint8_t xbuf[MYBUFLEN] __attribute__((__aligned__(262144)));
 
@@ -49,26 +50,6 @@ usage(void)
 }
 
 static const char val_answer[] = "Yes\n";
-
-#ifdef USE_256M
-static const char * const fracs[4] = {
-	"",
-	"¼",
-	"½",
-	"¾"
-};
-#else
-static const char * const fracs[8] = {
-	"",
-	"⅛",
-	"¼",
-	"⅜",
-	"½",
-	"⅝",
-	"¾",
-	"⅞"
-};
-#endif
 
 int
 main(int argc, char *argv[])
@@ -154,9 +135,8 @@ main(int argc, char *argv[])
 
 		tot = 0;
 		while (tot < nbytes) {
-			i = tot / MYBUFLEN;
-			fprintf(stderr, "\rI: %llu%s GiB...    ",
-			    i / MYBUFFAC, fracs[i % MYBUFFAC]);
+			fprintf(stderr, "\rI: " myF_GM "...        \b\b\b\b\b\b\b\b",
+			    myA_GM(tot));
 			fflush(stderr);
 
 			z = nbytes - tot;
@@ -188,12 +168,7 @@ main(int argc, char *argv[])
 			}
 		}
 
-		i = tot / MYBUFLEN;
-		z = tot % MYBUFLEN;
-		fprintf(stderr,
-		    "\rI: %llu%s GiB + %llu bytes total (%llu MiB + %u KiB + %u bytes)\n",
-		    i / MYBUFFAC, fracs[i % MYBUFFAC], z,
-		    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL));
+		fprintf(stderr, "\rI: " myF_GB " total\n", myA_GB(tot));
 		if (close(fd))
 			fprintf(stderr, "W: close(2): %s\n", strerror(errno));
 		fprintf(stderr,
@@ -212,9 +187,8 @@ main(int argc, char *argv[])
 
 		tot = 0;
 		while (tot < nbytes) {
-			i = tot / MYBUFLEN;
-			fprintf(stderr, "\rI: %llu%s GiB...    ",
-			    i / MYBUFFAC, fracs[i % MYBUFFAC]);
+			fprintf(stderr, "\rI: " myF_GM "...        \b\b\b\b\b\b\b\b",
+			    myA_GM(tot));
 			fflush(stderr);
 
 			z = nbytes - tot;
@@ -240,18 +214,14 @@ main(int argc, char *argv[])
 			while (i < z)
 				if (xbuf[i++] != arcfour_byte(&c)) {
 					--i;
-					rv = z - i;
 					tot += i;
-					z = tot / MYBUFLEN;
-					i = tot % MYBUFLEN;
 					fprintf(stderr,
 					    "\nE: comparison error at byte %llu\n"
-					    "I: at %llu%s GiB + %llu bytes (%llu MiB + %u KiB + %u bytes)\n"
-					    "I: %llu bytes after this remaining (%d in this block)\n",
+					    "I: at %llu MiB + %u bytes (" myF_GB ")\n"
+					    "I: %llu bytes after this remaining (%u in this block)\n",
 					    tot,
-					    z / MYBUFFAC, fracs[z % MYBUFFAC], i,
-					    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL),
-					    nbytes - tot, rv);
+					    tot / MiB, (unsigned)(tot % MiB), myA_GB(tot),
+					    nbytes - tot, (unsigned)(z - i));
 					rv = 1;
 					break;
 				}
@@ -274,12 +244,7 @@ main(int argc, char *argv[])
 			}
 		}
 
-		i = tot / MYBUFLEN;
-		z = tot % MYBUFLEN;
-		fprintf(stderr,
-		    "\rI: %llu%s GiB + %llu bytes total (%llu MiB + %u KiB + %u bytes)\n",
-		    i / MYBUFFAC, fracs[i % MYBUFFAC], z,
-		    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL));
+		fprintf(stderr, "\rI: " myF_GB " total\n", myA_GB(tot));
 		if (close(fd))
 			fprintf(stderr, "W: close(2): %s\n", strerror(errno));
 		fprintf(stderr, "I: test completed successfully\n");
