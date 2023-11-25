@@ -1,6 +1,6 @@
 /* © 2023 mirabilos Ⓕ CC0 */
 
-/* gcc -O2 -Wall -Wextra -D_GNU_SOURCE -Iinc -o sd-test sd-test.c ;#*/
+/* gcc -O2 -Wall -Wextra -D_GNU_SOURCE -UUSE_256M -Iinc -o sd-test sd-test.c ;#*/
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20,10 +20,17 @@
 #include "arcfour_ksa.c"
 /*#include "hdump.c"*/
 
+#ifdef USE_256M
+/* fix fracs[] when changing this value! */
+#define MYBUFLEN (256ULL * 1024ULL * 1024ULL)
+#define MYBUFFAC 4
+#else
 /* fix fracs[] when changing this value! */
 #define MYBUFLEN (128ULL * 1024ULL * 1024ULL)
+#define MYBUFFAC 8
+#endif
 
-static uint8_t xbuf[MYBUFLEN];
+static uint8_t xbuf[MYBUFLEN] __attribute__((__aligned__(262144)));
 
 static const char *progname;
 
@@ -43,6 +50,14 @@ usage(void)
 
 static const char val_answer[] = "Yes\n";
 
+#ifdef USE_256M
+static const char * const fracs[4] = {
+	"",
+	"¼",
+	"½",
+	"¾"
+};
+#else
 static const char * const fracs[8] = {
 	"",
 	"⅛",
@@ -53,6 +68,7 @@ static const char * const fracs[8] = {
 	"¾",
 	"⅞"
 };
+#endif
 
 int
 main(int argc, char *argv[])
@@ -96,18 +112,20 @@ main(int argc, char *argv[])
 		usage();
 	}
 
-	if (stat(argv[4], &sb)) {
-		fprintf(stderr, "E: could not stat %s: %s\n",
-		    argv[4], strerror(errno));
-		usage();
-	}
-	switch (sb.st_mode & S_IFMT) {
-	case S_IFBLK:
-	case S_IFREG: /* for testing */
-		break;
-	default:
-		fprintf(stderr, "E: %s is not a block device\n", argv[4]);
-		usage();
+	if (strcmp(argv[4], "-")) {
+		if (stat(argv[4], &sb)) {
+			fprintf(stderr, "E: could not stat %s: %s\n",
+			    argv[4], strerror(errno));
+			usage();
+		}
+		switch (sb.st_mode & S_IFMT) {
+		case S_IFBLK:
+		case S_IFREG: /* for testing */
+			break;
+		default:
+			fprintf(stderr, "E: %s is not a block device\n", argv[4]);
+			usage();
+		}
 	}
 
 	/* initialise aRC4 */
@@ -126,7 +144,9 @@ main(int argc, char *argv[])
 			return (2);
 		}
 
-		if ((fd = open(argv[4], O_WRONLY | O_DIRECT | O_SYNC)) < 0) {
+		if (!strcmp(argv[4], "-"))
+			fd = 1;
+		else if ((fd = open(argv[4], O_WRONLY | O_DIRECT /*| O_SYNC*/)) < 0) {
 			fprintf(stderr, "E: could not open %s for %s: %s\n",
 			    argv[4], "writing", strerror(errno));
 			usage();
@@ -136,7 +156,7 @@ main(int argc, char *argv[])
 		while (tot < nbytes) {
 			i = tot / MYBUFLEN;
 			fprintf(stderr, "\rI: %llu%s GiB...    ",
-			    i / 8ULL, fracs[i % 8ULL]);
+			    i / MYBUFFAC, fracs[i % MYBUFFAC]);
 			fflush(stderr);
 
 			z = nbytes - tot;
@@ -172,7 +192,7 @@ main(int argc, char *argv[])
 		z = tot % MYBUFLEN;
 		fprintf(stderr,
 		    "\rI: %llu%s GiB + %llu bytes total (%llu MiB + %u KiB + %u bytes)\n",
-		    i / 8ULL, fracs[i % 8ULL], z,
+		    i / MYBUFFAC, fracs[i % MYBUFFAC], z,
 		    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL));
 		if (close(fd))
 			fprintf(stderr, "W: close(2): %s\n", strerror(errno));
@@ -182,7 +202,9 @@ main(int argc, char *argv[])
 	} else if (!strcmp(argv[1], "check")) {
 		int rv = 0;
 
-		if ((fd = open(argv[4], O_RDONLY | O_DIRECT)) < 0) {
+		if (!strcmp(argv[4], "-"))
+			fd = 0;
+		else if ((fd = open(argv[4], O_RDONLY | O_DIRECT)) < 0) {
 			fprintf(stderr, "E: could not open %s for %s: %s\n",
 			    argv[4], "reading", strerror(errno));
 			usage();
@@ -192,7 +214,7 @@ main(int argc, char *argv[])
 		while (tot < nbytes) {
 			i = tot / MYBUFLEN;
 			fprintf(stderr, "\rI: %llu%s GiB...    ",
-			    i / 8ULL, fracs[i % 8ULL]);
+			    i / MYBUFFAC, fracs[i % MYBUFFAC]);
 			fflush(stderr);
 
 			z = nbytes - tot;
@@ -227,7 +249,7 @@ main(int argc, char *argv[])
 					    "I: at %llu%s GiB + %llu bytes (%llu MiB + %u KiB + %u bytes)\n"
 					    "I: %llu bytes after this remaining (%d in this block)\n",
 					    tot,
-					    z / 8ULL, fracs[z % 8ULL], i,
+					    z / MYBUFFAC, fracs[z % MYBUFFAC], i,
 					    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL),
 					    nbytes - tot, rv);
 					rv = 1;
@@ -256,7 +278,7 @@ main(int argc, char *argv[])
 		z = tot % MYBUFLEN;
 		fprintf(stderr,
 		    "\rI: %llu%s GiB + %llu bytes total (%llu MiB + %u KiB + %u bytes)\n",
-		    i / 8ULL, fracs[i % 8ULL], z,
+		    i / MYBUFFAC, fracs[i % MYBUFFAC], z,
 		    tot / 1048576ULL, (unsigned)((tot % 1048576ULL) / 1024ULL), (unsigned)(tot % 1024ULL));
 		if (close(fd))
 			fprintf(stderr, "W: close(2): %s\n", strerror(errno));
