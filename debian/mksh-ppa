@@ -36,7 +36,7 @@ lynx -source "${ppabase}+packages?field.name_filter=mksh&field.status_filter=pub
     >s.xml
 
 <s.xml >s.lst xmlstarlet sel -T -B -E UTF-8 -t \
-    -m '//tr[contains(@class, "archive_package_row") and contains("|Trusty|Xenial|Bionic|Focal|Jammy|", concat("|", td[5], "|"))]' \
+    -m '//tr[contains(@class, "archive_package_row") and contains("|Trusty|Xenial|Bionic|Focal|Jammy|Noble|", concat("|", td[5], "|"))]' \
     -v 'td[5]' -o '' -v 'td[1]/a/@href' -o '' -b
 
 set -A archs
@@ -52,6 +52,7 @@ while IFS='' read -r -d '' dist durl; do
 	(Bionic) dist=zb ;;
 	(Focal) dist=zf ;;
 	(Jammy) dist=zj ;;
+	(Noble) dist=zn ;;
 	}
 	durl=${|tourl "$durl";}
 	lynx -source ${|tourl "$durl";} | \
