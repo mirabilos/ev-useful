@@ -45,7 +45,9 @@ for name in sys.argv[1:]:
         tblno += 1
         rowspans = {}
         with open("%s.%d.ssv" % (name, tblno), "w", encoding='UTF-8', newline='\n') as fp:
+            rowno = 0
             for row in e.find_all('tr'):
+                rowno += 1
                 rowstr = ''
                 colsep = ''
                 curcol = 0
@@ -64,6 +66,13 @@ for name in sys.argv[1:]:
                     if cell.has_attr('colspan'):
                         nspan = int(cell['colspan'])
                         while nspan > 1:
+                            curcol += 1
+                            if curcol in rowspans:
+                                rowsp = rowspans.pop(curcol)
+                                if rowsp > 1:
+                                    print("W: overlapping rowspan and colspan in (%d, %d)" % (rowno, curcol))
+                                    if rowsp > 2:
+                                        rowspans[curcol] = rowsp - 1
                             rowstr += colsep
                             nspan -= 1
                     if cell.has_attr('rowspan'):
