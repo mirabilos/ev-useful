@@ -1,5 +1,5 @@
 <?php
-/* © mirabilos Ⓕ CC0 */
+/* © mirabilos Ⓕ CC0 or MirBSD */
 
 /* does the parameter match the IP-literal or IPv4address production of RFC 3986? */
 function isIPaddress($s) {

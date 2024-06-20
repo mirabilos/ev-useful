@@ -1,4 +1,4 @@
-/* © 2023 mirabilos Ⓕ CC0 */
+/* © 2023 mirabilos Ⓕ CC0 or MirBSD */
 
 /* gcc -O2 -Wall -Wextra -D_GNU_SOURCE -Iinc -o sd-test sd-test.c ;#*/
 

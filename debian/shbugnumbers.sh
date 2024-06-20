@@ -1,5 +1,5 @@
 #!/bin/mksh
-# © 2022 mirabilos Ⓕ CC0
+# © 2022 mirabilos Ⓕ CC0 or MirBSD
 
 export LC_ALL=C
 unset LANGUAGE
