@@ -3,16 +3,14 @@ more like aid to developers, admins, training purposes or a code library.
 Each of the snippets is separate and may have separate authors.
 
 For each, if they are or may be protected by copyright law, they MUST
-be covered by an OSI-approved licence or CC0. (Otherwise, they are
-obviously in the Public Domain. Note that PD dedications do not count
-as these works will still be copyright-protected in other countries;
-similar for e.g. USA government works. The “Unlicense” also is not a
-licence, and so isn’t sufficient.) Things marked as not complicated
-enough for copyright are assumed to not achieve whatever threshold of
-originality required for such protection; all files marked thusly are
-available under CC0 as fallback, should they not be free of copyright
-protection in your legislation. IANA’s timezone database’s data files
-exports are just PD-labelled, as facts.
+be covered by an OSI-approved licence or CC0; CC0 works should have a
+dual licence grant (Fedora doesn’t consider CC0 for code free enough).
+(Otherwise, they are obviously in the Public Domain. PD dedications
+do not count as these works will still be copyright-protected in other
+countries; similar for e.g. USA government works. The “Unlicense” is
+merely a badly worded PD dedication with no fallback licence and so is
+not sufficient.) IANA’s timezone database exports are just PD-labelled,
+as facts.
 
 For licencing conditions, look into each file separately.
 
