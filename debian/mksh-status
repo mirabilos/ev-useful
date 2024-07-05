@@ -17,7 +17,7 @@ set -e
 set -o pipefail
 cd "$T"
 
-lynx -source https://buildd.debian.org/status/package.php?p=mksh | \
+lynx -source https://buildd.debian.org/status/package.php?p=mksh"${1:+&suite=$1}" | \
     tee s.htm | \
     HTML_TIDY=/dev/null tidy -asxhtml -utf8 --newline LF --output-bom no \
     --drop-empty-elements no --drop-empty-paras no --quote-nbsp no --wrap 0 | \
