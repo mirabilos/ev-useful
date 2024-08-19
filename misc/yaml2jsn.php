@@ -1,7 +1,7 @@
 <?php
 /*-
- * Copyright © 2012, 2017
- *	mirabilos <t.glaser@tarent.de>
+ * Copyright © 2012, 2017, 2024
+ *	mirabilos <t.glaser@qvest-digital.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
@@ -21,6 +21,10 @@
 
 error_reporting(-1);
 require_once(dirname(__FILE__) . '/minijson.php');
+
+ini_set('yaml.decode_binary', 0);
+ini_set('yaml.decode_php', 0);
+ini_set('yaml.decode_timestamp', 0);
 
 function croak($msg) {
 	fprintf(STDERR, "E: %s\n", $msg);
@@ -84,49 +88,79 @@ function array_sort_all_by_json($x) {
 	return $r;
 }
 
+function usage($rc=1) {
+	fwrite(STDERR,
+	    "Syntax: yaml2jsn.php [--multidoc]\n");
+	exit($rc);
+}
+
+$mdi = false;
+array_shift($argv);	/* argv[0] */
+while (count($argv)) {
+	$arg = array_shift($argv);
+	/* only options, no arguments (Unix filter) */
+	if ($arg[0] !== '-')
+		usage();
+	if ($arg === '--' && count($argv))
+		usage();
+	if ($arg === '-')
+		usage();
+	/* parse select options */
+	if ($arg === '--help' || $arg === '-h' || $arg === '-?')
+		usage(0);
+	elseif ($arg === '--multidoc')
+		$mdi = true;
+	else
+		usage();
+}
+
 $indoc = file_get_contents("php://stdin");
 if (!$indoc)
 	croak("no input");
 
 $numdocs = -666;
-if (($in = yaml_parse($indoc, 0, $numdocs)) === false || $numdocs === -666)
+if (($ina = yaml_parse($indoc, -1, $numdocs)) === false || $numdocs === -666)
 	croak("could not parse input document as YAML");
-if ($numdocs !== 1)
+if (!$mdi && ($numdocs !== 1))
 	croak("found $numdocs documents but can only handle a single one");
-$in = array_sort_all_by_json($in);
 
-$jsn = minijson_encode($in) . "\n";
-fwrite_all(STDOUT, $jsn);
+foreach ($ina as $in) {
+	$in = array_sort_all_by_json($in);
 
-if (($out = yaml_parse($jsn)) === false)
-	croak("could not reparse JSON output as YAML");
+	$jsn = minijson_encode($in) . "\n";
+	fwrite_all(STDOUT, $jsn);
 
-if (($rein = yaml_emit($in, YAML_UTF8_ENCODING, YAML_LN_BREAK)) === false)
-	croak("could not emit input document as YAML");
-if (($reout = yaml_emit($out, YAML_UTF8_ENCODING, YAML_LN_BREAK)) === false)
-	croak("could not emit output document as YAML");
-if ($rein === $reout)
-	exit(0);
+	if (($out = yaml_parse($jsn)) === false)
+		croak("could not reparse JSON output as YAML");
 
-fwrite(STDERR, "E: documents do not emit identical; delta:\n");
-$pipes = array();
-if (($p = proc_open("diff -u /dev/fd/5 /dev/fd/6", array(
-	0 => array("file", "/dev/null", "r"),
-	1 => STDERR,
-	2 => STDERR,
-	5 => array("pipe", "r"),
-	6 => array("pipe", "r"),
-    ), $pipes)) === false)
-	croak("could not spawn diff(1)");
-fwrite_all($pipes[5], $rein . "\n");
-fwrite_all($pipes[6], $reout . "\n");
-fclose($pipes[5]);
-fclose($pipes[6]);
-$rv = proc_close($p);
-if ($rv === -1)
-	croak("unknown error closing diff(1) subprocess");
-if ($rv === 0)
-	croak("diff(1) did not detect any changes");
-if ($rv !== 1)
-	croak("diff(1) encountered an errorlevel $rv");
-exit(1);
+	if (($rein = yaml_emit($in, YAML_UTF8_ENCODING, YAML_LN_BREAK)) === false)
+		croak("could not emit input document as YAML");
+	if (($reout = yaml_emit($out, YAML_UTF8_ENCODING, YAML_LN_BREAK)) === false)
+		croak("could not emit output document as YAML");
+	if ($rein === $reout)
+		continue;
+
+	fwrite(STDERR, "E: documents do not emit identical; delta:\n");
+	$pipes = array();
+	if (($p = proc_open("diff -u /dev/fd/5 /dev/fd/6", array(
+		0 => array("file", "/dev/null", "r"),
+		1 => STDERR,
+		2 => STDERR,
+		5 => array("pipe", "r"),
+		6 => array("pipe", "r"),
+	    ), $pipes)) === false)
+		croak("could not spawn diff(1)");
+	fwrite_all($pipes[5], $rein . "\n");
+	fwrite_all($pipes[6], $reout . "\n");
+	fclose($pipes[5]);
+	fclose($pipes[6]);
+	$rv = proc_close($p);
+	if ($rv === -1)
+		croak("unknown error closing diff(1) subprocess");
+	if ($rv === 0)
+		croak("diff(1) did not detect any changes");
+	if ($rv !== 1)
+		croak("diff(1) encountered an errorlevel $rv");
+	exit(1);
+}
+exit(0);
