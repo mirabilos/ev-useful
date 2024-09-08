@@ -21,3 +21,20 @@ related:    https://evolvis.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=shellsnippet
 http://www.mirbsd.org/FreeLicenceLists.htm contains more information
 on fallback licences and a request to explicitly permit neighbouring
 rights and other rights the work may be subject to.
+
+More practical notes:
+
+It is possible, with a binfmt_misc registration, to run executable
+PHP scripts without a shebang (so they can also be included in CGI
+or Apache module scripts): put this…
+
+	cat >/proc/sys/fs/binfmt_misc/register <<\EOF
+	:php:M::<?php\x0A::/usr/bin/php:
+	EOF
+
+… and possibly before that…
+
+	modprobe binfmt_misc && mount -t binfmt_misc \
+	    -o nodev,noexec,nosuid binfmt_misc /proc/sys/fs/binfmt_misc
+
+… into /etc/rc.local to enable.
