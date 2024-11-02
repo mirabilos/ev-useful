@@ -1,5 +1,5 @@
 /*-
- * Copyright © 2014, 2020, 2023
+ * Copyright © 2014, 2020, 2023, 2024
  *	mirabilos <m@mirbsd.org>
  *
  * Provided that these terms and disclaimer and all copyright notices
@@ -378,7 +378,7 @@ G.deferDOM = (function _closure_deferDOM(indirfnf, redirfn) {
 		/* set up handler */
 		setupfn();
 		/* except if DOM got ready in the meantime */
-		if (document.readyState === "complete") {
+		if (document.readyState === "complete" || called) {
 			/* undo all that attaching */
 			handler();
 			/* goto finish */
