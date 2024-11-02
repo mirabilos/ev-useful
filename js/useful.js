@@ -132,7 +132,7 @@ var _makeDateObject = function _makeDateObject() {
 	}
     };
 var _getDateObject = function _getDateObject(a1) {
-	if (_toString.call(a1) === "[object Date]" && !isNaN(a1))
+	if (_toString.call(a1) === "[object Date]" /* && !isNaN(a1) */)
 		return (a1);
 	return (_makeDateObject.apply(null, arguments));
     };
