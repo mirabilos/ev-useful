@@ -1,0 +1,53 @@
+#!/bin/sh
+# © 2025 mirabilos Ⓕ MirBSD
+#-
+# Obtains size of a split (--data-device=) dm-integrity metadata device
+# on the native architecture before formatting.
+
+LC_ALL=C LANGUAGE=C
+export LC_ALL
+unset LANGUAGE
+
+die() {
+	echo >&2 "E: $*"
+	exit 1
+}
+
+usage() {
+	echo >&2 "E: usage: $0 <datadev> [<tagsize>]"
+	echo >&2 "N: devices can be given as /dev/sdX1 or as size"
+	exit 1
+}
+
+case x$1 in
+(x)
+	usage ;;
+(x/*)
+	x=$(lsblk --nodeps --noheadings --output SIZE --bytes --raw "$1") || \
+	    die "cannot lsblk '$1'"
+	dd=$(bc <<-EOF
+		$x/512
+EOF
+	    ) || die "cannot convert '$x' for '$dd'"
+	;;
+(*)
+	dd=$1
+	;;
+esac
+shift
+
+if test $# -gt 0; then
+	ts=$1
+	shift
+else
+	ts=4
+fi
+
+set -ex
+${CC:-cc} ${CFLAGS:- -O2 -Wall -Wextra} -o isize-p.tmp -x c - <<EOF
+#define datasize $dd
+#define hashsize $ts
+#include "isize-p.h"
+EOF
+./isize-p.tmp "$@"
+rm isize-p.tmp
