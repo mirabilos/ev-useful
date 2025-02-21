@@ -14,8 +14,10 @@ die() {
 }
 
 usage() {
-	echo >&2 "E: usage: $0 <datadev> [<tagsize>]"
+	echo >&2 "E: usage: $0 <datadev> [<tagsize>] [<sectors per block>]"
 	echo >&2 "N: devices can be given as /dev/sdX1 or as size"
+	echo >&2 "N: tagsize: default 4"
+	echo >&2 "N: sectors per block: 1=512 (default), 8=4096-byte sectors"
 	exit 1
 }
 
@@ -43,10 +45,18 @@ else
 	ts=4
 fi
 
+if test $# -gt 0; then
+	spb=$1
+	shift
+else
+	spb=1
+fi
+
 set -ex
 ${CC:-cc} ${CFLAGS:- -O2 -Wall -Wextra} -o isize-p.tmp -x c - <<EOF
 #define datasize $dd
 #define hashsize $ts
+#define spblk $spb
 #include "isize-p.h"
 EOF
 ./isize-p.tmp "$@"

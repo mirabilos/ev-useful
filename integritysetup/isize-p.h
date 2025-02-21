@@ -91,7 +91,8 @@ main(void)
 
 	ic->tag_size = hashsize;
 #undef hashsize
-	ic->sectors_per_block = 1;
+	ic->sectors_per_block = spblk;
+#undef spblk
 	ic->data_device_sectors = datasize;
 #undef datasize
 	journal_sectors = min((unsigned long long)DEFAULT_MAX_JOURNAL_SECTORS,
