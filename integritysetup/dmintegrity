@@ -1,0 +1,32 @@
+#!/bin/sh
+# /etc/initramfs-tools/scripts/init-premount/dmintegrity
+
+PREREQ=""
+prereqs() {
+	echo "$PREREQ"
+}
+
+case $1 in
+(prereqs)
+	prereqs
+	exit 0
+	;;
+esac
+
+. /scripts/functions
+
+log_begin_msg integritysetup open
+iopen() {
+	device=$1
+	source=$2
+	shift 2
+	_log_msg '%s ' "$device"
+	integritysetup "$@" open "$source" "$device"
+}
+
+iopen isda /dev/disk/by-partuuid/11111111-02 --allow-discards
+iopen isdb /dev/disk/by-partuuid/22222222-02 --allow-discards
+# …
+
+log_end_msg
+exit 0
