@@ -45,6 +45,63 @@ scenarios:
   slowdown from use of dm-integrity is less
 
 
+Trouble with split setup
+────────────────────────
+
+As stated above, with split setup, other tools (like GRUB) can
+access the data device without bothering with dm-integrity at
+all. This is both an upside and a downside: if you ever boot a
+rescue system (*or* don’t change your mdadm.conf) chances are
+the RAID atop the integrity devices will be autoconfigured but
+witho̲u̲t̲ the integrity protection below (which the next time it
+does use the protection will cause errors to be shown as the
+md superblock changed, of course, but this is a good test to
+see that dm-integrity indeed works). GRUB also has trouble.
+
+To fix these issues, do:
+
+1. change your /etc/mdadm/mdadm.conf to only auto-assemble any
+   devices with dm-integrity below (which, see above, we used
+   a naming scheme starting with ‘i’ for, I use ‘c’ for LUKS):
+
+   DEVICE /dev/mapper/i*
+  … instead of the default
+   #DEVICE partitions containers
+
+2. When booting a rescue system ideally make it not assemble
+   the RAIDs automatically (grml.org has a boot option named
+   “forensic” for that). Unfortunately, the desire to be
+   auto-assembled cannot be written into the superblock but,
+   as a hack, a different --homehost could be used as well.
+
+   Should they be accidentally configured then disassemble and
+   reassemble them before mounting or otherwise writing:
+   # mdadm --stop /dev/md126
+   # mdadm --assemble /dev/md0 /dev/mapper/isd{X,Y}3
+
+3. GRUB doesn’t add the modules needed to get to /boot into
+   the core.img; your first boot will result in landing in its
+   rescue mode. Unfortunately, there is no simple way to have
+   it include extra modules into core.img but this works:
+
+   - rename the original grub-install:
+     # dpkg-divert --rename --divert /usr/sbin/grub-install.ORIG \
+           --add /usr/sbin/grub-install
+   - create a new shell script named /usr/sbin/grub-install with:
+
+     #!/bin/sh
+     mods='diskfilter biosdisk part_msdos part_gpt mdraid1x lvm ext2'
+     set -x
+     exec /usr/sbin/grub-install.ORIG --modules="$mods" "$@"
+
+   - (you might want to add different ones, these cover common setups)
+   - # chown 0:0 /usr/sbin/grub-install; chmod 755 /usr/sbin/grub-install
+   - re-run “dpkg-reconfigure -plow grub-pc” to choose which
+     devices should be made bootable (ideally, at least all
+     that participate in the /boot RAID) and to let it redo
+     the GRUB installation
+
+
 Sizing metadata
 ───────────────
 
