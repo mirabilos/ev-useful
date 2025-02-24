@@ -24,9 +24,17 @@ iopen() {
 	integritysetup "$@" open "$source" "$device"
 }
 
+doraid() {
+	device=$1
+	shift
+	_log_msg '%s ' "${device##*/}"
+	mdadm --assemble "$device" "$@"
+}
+
 iopen isda /dev/disk/by-partuuid/11111111-02 --allow-discards
 iopen isdb /dev/disk/by-partuuid/22222222-02 --allow-discards
 # …
+doraid /dev/md0 /dev/mapper/isda /dev/mapper/isdb
 
 log_end_msg
 exit 0

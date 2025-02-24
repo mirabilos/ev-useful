@@ -68,6 +68,14 @@ To fix these issues, do:
   … instead of the default
    #DEVICE partitions containers
 
+   Real-world tests indicate that it’s better to not rely on
+   auto-assembly (at all)…
+
+   AUTO -all
+
+   … and do assembly by hand, e.g. by using the doraid function
+   in /etc/initramfs-tools/scripts/init-premount/dmintegrity.
+
 2. When booting a rescue system ideally make it not assemble
    the RAIDs automatically (grml.org has a boot option named
    “forensic” for that). Unfortunately, the desire to be
