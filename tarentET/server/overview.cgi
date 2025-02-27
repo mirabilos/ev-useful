@@ -48,6 +48,7 @@ cat <<-'EOF'
 	 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 	<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head>
 	 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	 <meta name="tdm-reservation" content="1" />
 	 <title>Overview of all checktask’d hosts</title>
 	 <style type="text/css"><!--/*--><![CDATA[/*><!--*/
 	  table {
