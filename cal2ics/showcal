@@ -1,0 +1,49 @@
+#!/usr/bin/env php
+<?php
+
+// © 2025 mirabilos Ⓕ MirBSD or CC0
+
+function err($msg) {
+	echo "E: $msg\n";
+	exit(1);
+}
+
+/* autoloader foo */
+namespace Sabre\VObject;
+require_once('/usr/share/php/Sabre/VObject/autoload.php');
+
+$utc = new \DateTimeZone(\DateTimeZone::listIdentifiers(\DateTimeZone::UTC)[0]);
+
+$vObj = Reader::read(file_get_contents('php://stdin'),
+    Reader::OPTION_FORGIVING);
+if ($vObj->name != 'VCALENDAR')
+	err("stdin is not an iCalendar");
+$events = array();
+foreach ($vObj->children() as $e) {
+	if ($e->name != 'VEVENT')
+		continue;
+	switch ($e->DTSTART->getDateType()) {
+	case Property\DateTime::LOCAL:
+		$text = preg_replace("/^(....)(..)(..)T(..)(..)(..)$/",
+		    "\\1-\\2-\\3T\\4:\\5:\\6 (floating)", $e->DTSTART);
+		$wday = substr($e->DTSTART, 0, 8);
+		$order = 2;
+		break;
+	case Property\DateTime::DATE:
+		$text = preg_replace("/^(....)(..)(..)$/",
+		    "\\1-\\2-\\3 (whole-day)", $e->DTSTART);
+		$wday = "".$e->DTSTART;
+		$order = 1;
+		break;
+	default:
+		$e->DTSTART->getDateTime()->setTimezone($utc);
+		$text = $e->DTSTART->getDateTime()->format('Y-m-d\TH:i:s\Z');
+		$wday = $e->DTSTART->getDateTime()->format('Ymd');
+		$order = 3;
+		break;
+	}
+	$text .= preg_replace("/\n/", "\n\t", "\n" . $e->SUMMARY) . "\n";
+	$events[] = array($wday, $order, $e->DTSTART->getDateTime(), $text);
+}
+sort($events);
+array_map(function ($e) { echo $e[3]; }, $events);
