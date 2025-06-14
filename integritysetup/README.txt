@@ -247,7 +247,9 @@ self-healing because it sits on top, not below, the RAID and directly
 in the LUKS layer. If this level of protection is desired I’d recommend
 using both (standalone) dm-integrity below RAID (for self-healing) and
 (integrated) dm-integrity in LUKS (for authentication of the encrypted
-data) and accept the resulting performance cost.
+data) and accept the resulting performance cost. HOWEVER, the AEAD mode
+does NOT support, not even pass-through, TRIM (discard), so this might
+be less useful than thought.
 
 Note the LUKS-integrated dm-integrity can be started by cryptsetup and
 therefore does NOT need integritysetup nor the initramfs scripts. (If
