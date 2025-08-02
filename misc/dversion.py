@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-
+#
 # Copyright © 2024 mirabilos
 #
 # Provided that these terms and disclaimer and all copyright notices
@@ -46,6 +46,7 @@ _debverre = (
 # split components into runs of digits and not-digits
 _cmpsplit = re.compile(b'([0-9]+)')
 
+
 # split component and normalise
 def _cmpprep(v):
     if v is None:
@@ -65,6 +66,7 @@ def _cmpprep(v):
         v[i] = int(v[i])
     return tuple(v)
 
+
 # implement alphabetic ordering (~ before end,
 # then letters, and finally everything else)
 def _alphprep(ch):
@@ -79,6 +81,7 @@ def _alphprep(ch):
     if ch <= b'z':
         return ord(ch)
     return 128 + ord(ch)
+
 
 # compare two Version objects ⇒ -1 or 0 or 1
 def _cmpv(self, other):
@@ -156,6 +159,7 @@ def _cmpv(self, other):
             return 1
     return 0
 
+
 class Version:
     """Sortable representation of a version.
 
@@ -205,7 +209,7 @@ class Version:
                 dm[0] = int(dm[0])
             if dmaint == 0:
                 dm[2] = None
-            if dm[0] <= 2147483547:
+            if dm[0] <= 2147483647:
                 self._deb = tuple(dm)
             else:
                 self._deb = False
@@ -251,6 +255,7 @@ class Version:
         upstream:bytes, revision:bytes-or-None) if it is.
         """
         return self._deb
+
 
 if __name__ == "__main__":
     import sys
