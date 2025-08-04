@@ -37,9 +37,10 @@ def chkdebver(v, towhat):
     # and we do need the explicit comparison to False because
     # the other values can be falsy
     if towhat:
-        # noqa: E712 see above
+        # pylint: disable-next=singleton-comparison
         p(v.isDebianVersion() != False)  # noqa: E712 (see above)
     else:
+        # pylint: disable-next=singleton-comparison
         p(v.isDebianVersion() == False)  # noqa: E712 (see above)
 
 

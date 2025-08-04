@@ -60,6 +60,7 @@ def _cmpprep(v):
     # convert to comparison form even indexes: 0, 2, 4, …
     for i in range(0, len(v), 2):
         b = v[i]
+        # pylint: disable-next=consider-using-generator
         v[i] = tuple([_alphprep(b[j:j + 1]) for j in range(len(b))])
     # convert to number the odd indexes: 1, 3, 5, …
     for i in range(1, len(v), 2):
