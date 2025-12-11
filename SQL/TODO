@@ -10,3 +10,14 @@ HINT:  Use DROP ... CASCADE to drop the dependent objects too.
 CONTEXT:  SQL statement "ALTER TABLE ONLY public.product_listing
  DROP CONSTRAINT "PK_cc64c972fd68c6bce3f9a5b1273";"
 PL/pgSQL function inline_code_block line 33 at EXECUTE –
+
+I asked whether it works if you put the “normal and materialised views” block
+before the “constraints #1: foreign key” block? But they deleted manually meanwhile.
+
+────
+
+https://dba.stackexchange.com/users/355540/chris-mutel writes:
+
+This is fantastic.
+I had to add a second constraint after the foreign key block to delete pcon.contype='p',
+and then update the (now third) constraint block to pcon.contype NOT IN ('f', 'p').
