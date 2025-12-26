@@ -53,6 +53,7 @@ while IFS='' read -r -d '' dist durl; do
 	(Focal) dist=zf ;;
 	(Jammy) dist=zj ;;
 	(Noble) dist=zn ;;
+	(Resolute) dist=zr ;;
 	}
 	durl=${|tourl "$durl";}
 	lynx -source ${|tourl "$durl";} | \
@@ -80,7 +81,7 @@ while IFS='' read -r -d '' dist durl; do
 done <s.lst
 
 cat >columnus <<-'EOF'
-	arch)prog)system)klibc)musl)dietlibc)glibc
+	arch/vsn)system/g)klibc)musl)dietlibc)glibc
 EOF
 
 i=-1
@@ -110,7 +111,7 @@ while (( ++i < narchs )); do
 	case $nl$llc in (*"${nl}vt="*"${nl}vt="*)
 		echo >&2 "W: multiple loglibc:final lines; log is fishy: $fn" ;;
 	esac
-	vs= vt= vvarch= vvbred= vvsystem=
+	vs= vt= vvarch= vvbred= vvsystem= vvasan=
 	vvmksh_klibc= vvmksh_musl= vvmksh_dietlibc= vvmksh_glibc=
 	vvlksh_klibc= vvlksh_musl= vvlksh_dietlibc= vvlksh_glibc=
 	eval "$llc"
@@ -118,7 +119,7 @@ while (( ++i < narchs )); do
 		vs=$vt vvarch= vvbred=
 	fi
 	if test -z "$vt"; then
-		vt=$vs vvsystem=
+		vt=$vs vvsystem= vvasan=
 		vvmksh_klibc= vvmksh_musl= vvmksh_dietlibc= vvmksh_glibc=
 		vvlksh_klibc= vvlksh_musl= vvlksh_dietlibc= vvlksh_glibc=
 	fi
@@ -147,9 +148,12 @@ while (( ++i < narchs )); do
 	(*)
 		vsn='('${vsn:-¿?}
 	}
+	dist=${archs[i]%%-*}
+	vvarch=$dist-$vvarch
+	[[ ${archs[i]} = "$vvarch" ]] || vvarch="${archs[i]}!$vvarch"
 	cat >>columnus <<-EOF
-		${archs[i]})mksh)${vvsystem:-⁉ unset})${vvmksh_klibc:-⁉ unset})${vvmksh_musl:-⁉ unset})${vvmksh_dietlibc:-⁉ unset})${vvmksh_glibc:-⁉ unset}
-		${vvarch:+}${vvarch:- })lksh) $bred $vsn)${vvlksh_klibc:-⁉ unset})${vvlksh_musl:-⁉ unset})${vvlksh_dietlibc:-⁉ unset})${vvlksh_glibc:-⁉ unset}
+		$vvarch)${vvsystem:-⁉ unset})${vvmksh_klibc:-⁉ unset})${vvmksh_musl:-⁉ unset})${vvmksh_dietlibc:-⁉ unset})${vvmksh_glibc:-⁉ unset}
+		$bred$vsn)${vvasan:-⁉ unset})${vvlksh_klibc:-⁉ unset})${vvlksh_musl:-⁉ unset})${vvlksh_dietlibc:-⁉ unset})${vvlksh_glibc:-⁉ unset}
 	EOF
 done
 
@@ -165,17 +169,18 @@ ed -s tabularis <<-\EOF
 	,g/✗[^ ]*/s//[0;31;40m&/g
 	,g/☒[^ ]*/s//[0;1;35;40m&/g
 	,g/✔[^ ]*/s//[0;1;32;40m&/g
-	,g/ ↑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1v[0;1m\2 /
-	,g/ ↑\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1v[1m\2 /
-	,g/ ⇑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1v[0;31;1m\2 /
-	,g/ ⇑\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1v[31;1m\2 /
-	,g/ ⇓\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m ↑\1v[0;5;1m\2 /
-	,g/ ⇓\(.*\)⸘\([^ ]*\) /s//[0;36;40m ↑\1v[5;1m\2 /
+	,g/^↑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m↑ \1[0;1m\2 /
+	,g/^↑\(.*\)⸘\([^ ]*\) /s//[0;36;40m↑ \1[1m\2 /
+	,g/^⇑\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m↑ \1[0;31;1m\2 /
+	,g/^⇑\(.*\)⸘\([^ ]*\) /s//[0;36;40m↑ \1[31;1m\2 /
+	,g/^⇓\([^(]*\)(\([^ ]*\) /s//[0;1;30;40m↑ \1[0;5;1m\2 /
+	,g/^⇓\(.*\)⸘\([^ ]*\) /s//[0;36;40m↑ \1[5;1m\2 /
 	,g/⸘/s//[0;1;36;40m/g
 	1s/^/[0m/
 	1s/  */&| /g
 	1s/$/   /
-	2,$g/^[^ ]/s//[0;1;34;40m&/
+	2,$g/^\([^ !]*!\)/s//[0;1;31;40m&/
+	2,$g/^[^ ]/s//[0;1;34;40m&/
 	2,$g/  */s//[0m&| /g
 	,g/ |/s//|/g
 	1t$
