@@ -6,6 +6,10 @@ which ships with the Linux kernel 5.10; starting with 5.4, if
 you use standalone dm-integrity to protect each member of an
 mdraid device, it can “self-heal” even silent data corruption.
 
+This documentation and the scripts inside this directory that
+do not carry explicit notices are published under the terms of
+The MirOS Licence. The GPL only applies where noted.
+
 
 Setup layouts
 ─────────────
