@@ -20,6 +20,10 @@ iopen() {
 	device=$1
 	source=$2
 	shift 2
+	if test -b "/dev/mapper/$device"; then
+		_log_msg '(%s) ' "$device"
+		return 0
+	fi
 	_log_msg '%s ' "$device"
 	integritysetup "$@" open "$source" "$device"
 }
@@ -27,6 +31,10 @@ iopen() {
 doraid() {
 	device=$1
 	shift
+	if test -b "$device"; then
+		_log_msg '(%s) ' "${device##*/}"
+		return 0
+	fi
 	_log_msg '%s ' "${device##*/}"
 	mdadm --assemble "$device" "$@"
 }
