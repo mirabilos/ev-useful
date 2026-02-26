@@ -16,27 +16,50 @@ esac
 . /scripts/functions
 
 log_begin_msg integritysetup open
+lcl_lastspace=true
+lcl_dev() {
+	$lcl_lastspace || _log_msg ' '
+	_log_msg "$@"
+	lcl_lastspace=true
+}
+lcl_warn() {
+	$lcl_lastspace && _log_msg '\n'
+	log_warning_msg "$@"
+	lcl_lastspace=false
+}
+
 iopen() {
 	device=$1
 	source=$2
 	shift 2
 	if test -b "/dev/mapper/$device"; then
-		_log_msg '(%s) ' "$device"
+		lcl_dev '(%s) ' "$device"
 		return 0
 	fi
-	_log_msg '%s ' "$device"
+	test -b "$source" || lcl_warn "dmintegrity[$device] source $source missing"
+	lcl_dev '%s' "$device"
 	integritysetup "$@" open "$source" "$device"
+	_log_msg ' '
 }
 
 doraid() {
 	device=$1
 	shift
 	if test -b "$device"; then
-		_log_msg '(%s) ' "${device##*/}"
+		lcl_dev '(%s) ' "${device##*/}"
 		return 0
 	fi
-	_log_msg '%s ' "${device##*/}"
+	for source in "$@"; do
+		case $source in
+		(/dev/*)
+			test -b "$source" || \
+			    lcl_warn "mdadm[${device##*/}] source $source missing"
+			;;
+		esac
+	done
+	lcl_dev '%s' "${device##*/}"
 	mdadm --assemble "$device" "$@"
+	_log_msg ' '
 }
 
 iopen isda /dev/disk/by-partuuid/11111111-02 --allow-discards
