@@ -33,9 +33,7 @@ def f(v):
 
 def chkdebver(v, towhat):
     # pycodestyle is wrong here, False need not be a singleton
-    # (even if it is in current cpython) so “is false” is wrong,
-    # and we do need the explicit comparison to False because
-    # the other values can be falsy
+    # (even if it is in current cpython) so “is false” is wrong
     if towhat:
         # pylint: disable-next=singleton-comparison
         p(v.isDebianVersion() != False)  # noqa: E712 (see above)
